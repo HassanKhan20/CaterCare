@@ -1464,7 +1464,13 @@ export async function POST() {
 
 **Files:** `app/cook/dishes/page.tsx`, `app/cook/dishes/new/page.tsx`, `app/cook/dishes/[id]/page.tsx`, `app/api/cook/dishes/route.ts`, `app/api/cook/dishes/[id]/route.ts`
 
-- [ ] **Tests:** create, list, update, soft-delete (set `isActive=false`). Reject dish creation if cook not approved.
+- [ ] **Tests:**
+  - rejects dish creation for unapproved cook (403)
+  - rejects creation if `prohibitedItemsAcknowledged !== true` (zod parse failure)
+  - TCS dish without approved DSHS → dish created `isActive: false`, response has `warning: 'TCS_REQUIRES_DSHS'`
+  - TCS dish with approved DSHS → dish created `isActive: true`
+  - Non-TCS dish with prohibited keyword in name (e.g. "chicken biryani") → dish created `isActive: true` AND admin email sent flagging the dish for review (non-blocking — acknowledgment checkbox is the primary defense)
+  - PATCH update changes price; DELETE soft-deletes (isActive=false)
 
 ```typescript
 // tests/cook/dishes.test.ts excerpt
@@ -1472,6 +1478,14 @@ it('rejects dish creation for unapproved cook', async () => {
   // mock cookProfile.approvedAt = null
   const res = await POST(req);
   expect(res.status).toBe(403);
+});
+it('flags dish with prohibited keyword for admin review without blocking', async () => {
+  // mock cookProfile.approvedAt set, dishCategory: NON_TCS, name: "chicken biryani"
+  const res = await POST(req);
+  expect(res.status).toBe(200);
+  const json = await res.json();
+  expect(json.flaggedForReview).toBe(true);
+  // assert sendEmail spy was called with admin recipient
 });
 ```
 
@@ -1481,6 +1495,9 @@ it('rejects dish creation for unapproved cook', async () => {
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { sendEmail, templates } from '@/lib/email';
+import { isProhibitedKeyword } from '@/lib/cottage-food';
+import { env } from '@/lib/env';
 import { z } from 'zod';
 
 const Body = z.object({
@@ -1499,21 +1516,48 @@ const Body = z.object({
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  const profile = await prisma.cookProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await prisma.cookProfile.findUnique({
+    where: { userId: session.user.id },
+    include: { user: true },
+  });
   if (!profile?.approvedAt) return NextResponse.json({ error: 'NOT_APPROVED' }, { status: 403 });
   const body = Body.parse(await req.json());
 
-  // TX SB 541: TCS dishes require DSHS registration to be active
-  if (body.dishCategory === 'TCS' && profile.dshsRegistrationStatus !== 'APPROVED') {
-    // Create dish but mark inactive; trigger email to upload DSHS registration
-    const dish = await prisma.dish.create({ data: { cookId: session.user.id, ...body, isActive: false } });
-    // Fire-and-forget email (awaited in production for error tracking)
-    void sendEmail({ to: session.user.email!, ...templates.dshsRegistrationRequired(profile.user?.name ?? 'Cook') });
-    return NextResponse.json({ dish, warning: 'TCS_REQUIRES_DSHS' });
+  // TX SB 541: TCS dishes require DSHS registration to be active.
+  // Create-but-deactivate is intentional: dish auto-reactivates when admin approves DSHS (see A.9b).
+  const tcsBlocked = body.dishCategory === 'TCS' && profile.dshsRegistrationStatus !== 'APPROVED';
+
+  // Prohibited-keyword check is ADVISORY only — the cook's acknowledgment is the primary defense.
+  // We flag for admin review because keyword matching has false positives (e.g. "chicken-style tofu").
+  const flaggedForReview = isProhibitedKeyword(body.name) || isProhibitedKeyword(body.description);
+
+  const dish = await prisma.dish.create({
+    data: { cookId: session.user.id, ...body, isActive: !tcsBlocked },
+  });
+
+  if (tcsBlocked) {
+    const t = templates.dshsRegistrationRequired(profile.user.name ?? 'Cook');
+    await sendEmail({ to: profile.user.email, subject: t.subject, html: t.html });
   }
 
-  const dish = await prisma.dish.create({ data: { cookId: session.user.id, ...body } });
-  return NextResponse.json({ dish });
+  if (flaggedForReview) {
+    // Side-channel admin alert — does not block the cook
+    const admin = await prisma.user.findFirst({ where: { roles: { has: 'ADMIN' } } });
+    if (admin) {
+      await sendEmail({
+        to: admin.email,
+        subject: `Review dish "${body.name}" — prohibited-keyword match`,
+        html: `<p>Cook ${profile.user.name} (${profile.user.email}) created a dish with a prohibited-keyword match. Likely false positive but please review.</p>
+               <p><a href="${env.APP_URL}/admin/cooks/${session.user.id}">Open cook</a></p>`,
+      });
+    }
+  }
+
+  return NextResponse.json({
+    dish,
+    warning: tcsBlocked ? 'TCS_REQUIRES_DSHS' : undefined,
+    flaggedForReview,
+  });
 }
 
 export async function GET() {
@@ -1715,6 +1759,67 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 - [ ] **UI:** list of pending cooks with photos of ID + cert. Approve/Reject buttons. Reject opens modal with reason.
 - [ ] **Commit** `feat(admin): cook approval queue`
 
+## A.9b: Admin DSHS registration approval (with TCS dish auto-activation)
+
+**Files:** `app/api/admin/cooks/[id]/dshs/approve/route.ts`, `app/api/admin/cooks/[id]/dshs/reject/route.ts`, `tests/admin/dshs-approve.test.ts`
+
+DSHS registration is a separate document from the general cook approval. A cook may upload it weeks after their initial approval. When admin approves it, any TCS dishes the cook created earlier (which were forced `isActive: false` per A.5) must be auto-activated.
+
+- [ ] **Test:**
+
+```typescript
+// tests/admin/dshs-approve.test.ts
+it('approving DSHS auto-activates the cook\'s TCS dishes', async () => {
+  // seed: cook with dshsRegistrationStatus=PENDING + 2 TCS dishes (isActive=false) + 1 NON_TCS dish (isActive=true)
+  const res = await POST(reqWithAdminSession, { params: { id: 'cook1' } });
+  expect(res.status).toBe(200);
+  const tcsDishes = await prisma.dish.findMany({ where: { cookId: 'cook1', dishCategory: 'TCS' } });
+  expect(tcsDishes.every(d => d.isActive)).toBe(true);
+});
+it('approving DSHS does not touch already-active NON_TCS dishes', async () => {
+  // same seed
+  await POST(reqWithAdminSession, { params: { id: 'cook1' } });
+  const nonTcs = await prisma.dish.findMany({ where: { cookId: 'cook1', dishCategory: 'NON_TCS' } });
+  expect(nonTcs.every(d => d.isActive)).toBe(true);
+});
+```
+
+- [ ] **Implement** `app/api/admin/cooks/[id]/dshs/approve/route.ts`:
+
+```typescript
+import { NextResponse } from 'next/server';
+import { requireRole } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireRole('ADMIN').catch(() => null);
+  if (!admin) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  const { id } = await params;
+
+  await prisma.$transaction([
+    prisma.cookProfile.update({
+      where: { userId: id },
+      data: { dshsRegistrationStatus: 'APPROVED' },
+    }),
+    // Auto-activate any TCS dishes that were waiting on DSHS approval.
+    // Only flips dishes that are currently inactive — won't touch deliberately disabled ones in the same query
+    // because by design a cook only deactivates via DELETE which sets isActive=false on NON_TCS too.
+    // Trade-off accepted for v1: if a cook manually disabled a TCS dish for non-DSHS reasons, this re-enables it.
+    // Mitigation: surface a confirmation in the admin UI listing exactly which dishes will be re-activated.
+    prisma.dish.updateMany({
+      where: { cookId: id, dishCategory: 'TCS', isActive: false },
+      data: { isActive: true },
+    }),
+  ]);
+
+  return NextResponse.json({ ok: true });
+}
+```
+
+- [ ] **Implement reject route** (mirror pattern, sets `dshsRegistrationStatus: 'REJECTED'`, stores reason, leaves TCS dishes inactive).
+- [ ] **UI:** in `app/admin/cooks/[id]/page.tsx`, surface a "Pending DSHS review" section with the document preview and Approve/Reject buttons. The approve confirmation modal lists the TCS dishes that will be re-activated so the admin sees exactly what will change.
+- [ ] **Commit** `feat(admin): DSHS approval with TCS dish auto-activation`
+
 ## A.10: Admin driver approval queue
 
 **Files:** `app/admin/drivers/page.tsx`, `app/admin/drivers/[id]/page.tsx`, `app/api/admin/drivers/pending/route.ts`, `app/api/admin/drivers/[id]/approve/route.ts`, `app/api/admin/drivers/[id]/reject/route.ts`
@@ -1767,10 +1872,60 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 }
 ```
 
-- [ ] **Implement refund** — call `stripe.refunds.create({ payment_intent: order.stripePaymentIntentId })`, set state to `REFUNDED`.
-- [ ] **Implement reassign** — set `driverId=null`, push state back to `READY_FOR_PICKUP`.
-- [ ] **UI:** order list with filters by state. Detail page shows full event log + action buttons.
-- [ ] **Commit** `feat(admin): order intervention`
+- [ ] **Implement refund** — call `stripe.refunds.create({ payment_intent: order.stripePaymentIntentId })`, set state to `REFUNDED`, **and decrement the cook's `annualGmvCents` by `order.cookPayoutCents`** if the order had already counted (i.e. order was at or past DELIVERED when refunded). This keeps the TX $150K cottage food cap accurate.
+
+```typescript
+// app/api/admin/orders/[id]/refund/route.ts
+import { NextResponse } from 'next/server';
+import { requireRole } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { stripe } from '@/lib/stripe';
+
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireRole('ADMIN').catch(() => null);
+  if (!admin) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  const { id } = await params;
+  const { reason } = await req.json();
+
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order || !order.stripePaymentIntentId) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+  if (order.state === 'REFUNDED') return NextResponse.json({ error: 'ALREADY_REFUNDED' }, { status: 400 });
+
+  await stripe.refunds.create({ payment_intent: order.stripePaymentIntentId });
+
+  // GMV was incremented at DELIVERED (see B.17). If the order ever reached that, undo it.
+  const wasCountedTowardGmv = !!order.deliveredAt;
+  const currentYear = new Date().getFullYear();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.order.update({
+      where: { id },
+      data: { state: 'REFUNDED', cancellationReason: reason },
+    });
+    await tx.orderEvent.create({
+      data: { orderId: id, fromState: order.state, toState: 'REFUNDED', actorUserId: admin.id, note: reason },
+    });
+    if (wasCountedTowardGmv) {
+      // Only decrement if the cook's annualGmvYear still matches the year of the original delivery.
+      // If the year has rolled over, the original GMV is no longer in the active counter, so we skip.
+      const cookProfile = await tx.cookProfile.findUnique({ where: { userId: order.cookId } });
+      if (cookProfile && cookProfile.annualGmvYear === currentYear && order.deliveredAt?.getFullYear() === currentYear) {
+        await tx.cookProfile.update({
+          where: { userId: order.cookId },
+          data: { annualGmvCents: Math.max(0, cookProfile.annualGmvCents - order.cookPayoutCents) },
+        });
+      }
+    }
+  });
+
+  return NextResponse.json({ ok: true });
+}
+```
+
+- [ ] **Test:** refunding a DELIVERED order in the current year decrements `cookProfile.annualGmvCents`. Refunding an order from a prior year does NOT decrement (year has rolled over). Refunding a never-DELIVERED order (e.g. PLACED) does NOT touch GMV.
+- [ ] **Implement reassign** — set `driverId=null`, push state back to `READY_FOR_PICKUP`. Writes an `OrderEvent` row.
+- [ ] **UI:** order list with filters by state. Detail page shows full event log + action buttons. Refund button shows a confirmation modal that previews the GMV decrement amount.
+- [ ] **Commit** `feat(admin): order intervention with GMV decrement on refund`
 
 ## A.12: Admin user suspension
 
@@ -2101,7 +2256,7 @@ export async function POST(req: Request) {
   const body = Body.parse(await req.json());
 
   const [cook, dishes, address] = await Promise.all([
-    prisma.cookProfile.findUnique({ where: { userId: body.cookId } }),
+    prisma.cookProfile.findUnique({ where: { userId: body.cookId }, include: { user: { select: { name: true } } } }),
     prisma.dish.findMany({ where: { id: { in: body.items.map(i => i.dishId) }, cookId: body.cookId, isActive: true } }),
     prisma.buyerAddress.findUnique({ where: { id: body.deliveryAddressId } }),
   ]);
@@ -2122,12 +2277,20 @@ export async function POST(req: Request) {
     driverPerMileCents: env.DRIVER_PER_MILE_CENTS,
   });
 
-  return NextResponse.json({ financials, distanceMiles });
+  // Category-aware disclosure: TCS dishes get the stronger disclosure language because
+  // DSHS registration is part of the claim made to the buyer.
+  const containsTcs = dishes.some(d => d.dishCategory === 'TCS');
+  const cookName = cook.user.name ?? 'this cook';
+  const disclosureText = containsTcs
+    ? `One or more items in this order is a refrigerated/prepared meal (TCS). It is prepared in a private home kitchen by ${cookName}, who holds a current TX food handler certification and Texas DSHS cottage food registration.`
+    : `This food is prepared in a private home kitchen by ${cookName}, who holds a current TX food handler certification.`;
+
+  return NextResponse.json({ financials, distanceMiles, containsTcs, disclosureText });
 }
 ```
 
-- [ ] **UI:** address picker, time-slot picker (constrained by cook's availability + dish lead time), tip slider (0%, 10%, 15%, 20%, custom), home-kitchen disclosure checkbox (required to submit), order summary with live quote.
-- [ ] **Commit** `feat(buyer): checkout UI + quote endpoint`
+- [ ] **UI:** address picker, time-slot picker (constrained by cook's availability + dish lead time), tip slider (0%, 10%, 15%, 20%, custom), order summary with live quote. The home-kitchen disclosure checkbox renders `disclosureText` from the quote response so buyers see TCS-specific language for TCS orders. Required to submit.
+- [ ] **Commit** `feat(buyer): checkout UI + quote endpoint with category-aware disclosure`
 
 ## B.7: Order creation + Stripe payment
 
@@ -2188,6 +2351,14 @@ export async function POST(req: Request) {
   const driverPayoutCents = f.driverBasePayCents + f.driverTipCents;
   const platformRevenueCents = f.cookCommissionCents + f.buyerServiceFeeCents + (f.deliveryFeeCents - f.driverBasePayCents);
 
+  // Snapshot TCS status of this order for the compliance audit trail.
+  // Also reject the order if any TCS item is present but the cook has no approved DSHS registration —
+  // this can happen if a dish's status flipped between the buyer's add-to-cart and checkout.
+  const containsTcsItems = dishes.some(d => d.dishCategory === 'TCS');
+  if (containsTcsItems && cook.dshsRegistrationStatus !== 'APPROVED') {
+    return NextResponse.json({ error: 'COOK_TCS_NOT_REGISTERED' }, { status: 400 });
+  }
+
   const order = await prisma.order.create({
     data: {
       buyerId: session.user.id, cookId: body.cookId, state: 'DRAFT',
@@ -2204,6 +2375,7 @@ export async function POST(req: Request) {
       homeKitchenDisclosureAccepted: true,
       homeKitchenDisclosureAcceptedAt: new Date(),
       cookCertSnapshotExpiresAt: cook.foodHandlerCertExpiresAt!,
+      containsTcsItems, // TX SB 541 audit trail
       buyerNote: body.buyerNote,
       items: { create: body.items.map(it => {
         const d = dishes.find(x => x.id === it.dishId)!;
@@ -2455,7 +2627,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 **Files:** `app/driver/jobs/[id]/page.tsx`, `app/api/driver/jobs/[id]/transition/route.ts`
 
-- [ ] **Test:** pickup transition requires `pickupConfirmPhotoUrl`; dropoff requires `dropoffConfirmPhotoUrl`.
+- [ ] **Tests:**
+  - pickup transition requires `pickupConfirmPhotoUrl`; dropoff requires `dropoffConfirmPhotoUrl`
+  - DELIVERED transition increments `cookProfile.annualGmvCents` by `order.cookPayoutCents`
+  - DELIVERED transition resets `cookProfile.annualGmvYear` to current year if it was outdated (Jan-1 boundary safety net)
+  - DELIVERED transition calls `transferToDriver` with `order.driverPayoutCents`
+
 - [ ] **Implement transition route** (mirrors A.7 transition but enforces `driverId === session.user.id` and accepts states PICKED_UP and DELIVERED):
 
 ```typescript
@@ -2470,19 +2647,47 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const body = Body.parse(await req.json());
 
-  const order = await prisma.order.findUnique({ where: { id }, include: { driver: { include: { driverProfile: true } } } });
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { driver: { include: { driverProfile: true } } },
+  });
   if (!order || order.driverId !== session.user.id) return NextResponse.json({ error: 'NOT_YOURS' }, { status: 404 });
   if (!canTransition(order.state, body.to, 'DRIVER')) return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 400 });
 
-  const ts: any = {};
+  const ts: { pickedUpAt?: Date; deliveredAt?: Date } = {};
   if (body.to === 'PICKED_UP') ts.pickedUpAt = new Date();
   if (body.to === 'DELIVERED') ts.deliveredAt = new Date();
 
-  await prisma.$transaction([
-    prisma.order.update({ where: { id }, data: { state: body.to, ...ts } }),
-    prisma.orderEvent.create({ data: { orderId: id, fromState: order.state, toState: body.to, actorUserId: session.user.id, note: body.photoUrl } }),
-  ]);
+  // For DELIVERED, the GMV increment + payout must be in the same transaction as the state change
+  // so the order is never "delivered but not counted." A failure here rolls the whole thing back.
+  await prisma.$transaction(async (tx) => {
+    await tx.order.update({ where: { id }, data: { state: body.to, ...ts } });
+    await tx.orderEvent.create({
+      data: { orderId: id, fromState: order.state, toState: body.to, actorUserId: session.user.id, note: body.photoUrl },
+    });
 
+    if (body.to === 'DELIVERED') {
+      // Increment cook's annual GMV (TX cottage food cap tracking).
+      // Use `update` with raw increment for atomicity. Handles year rollover defensively.
+      const currentYear = new Date().getFullYear();
+      const cookProfile = await tx.cookProfile.findUnique({ where: { userId: order.cookId } });
+      if (cookProfile && cookProfile.annualGmvYear !== currentYear) {
+        // Counter was for a prior year — reset before incrementing
+        await tx.cookProfile.update({
+          where: { userId: order.cookId },
+          data: { annualGmvCents: order.cookPayoutCents, annualGmvYear: currentYear },
+        });
+      } else {
+        await tx.cookProfile.update({
+          where: { userId: order.cookId },
+          data: { annualGmvCents: { increment: order.cookPayoutCents } },
+        });
+      }
+    }
+  });
+
+  // Driver transfer happens OUTSIDE the DB transaction. If it fails, the order is still DELIVERED
+  // and admin can retry the transfer via the admin order intervention screen (A.11).
   if (body.to === 'DELIVERED') {
     const driverStripe = order.driver?.driverProfile?.stripeConnectAccountId;
     if (driverStripe) {
@@ -2498,7 +2703,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 ```
 
 - [ ] **UI:** pickup screen with "Open in Maps" button + photo capture; dropoff screen same pattern.
-- [ ] **Commit** `feat(driver): pickup + dropoff flow + driver payout transfer`
+- [ ] **Commit** `feat(driver): pickup + dropoff + driver payout + cook GMV increment`
 
 ## B.18: Driver earnings dashboard + instant payout
 
@@ -2507,12 +2712,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 - [ ] Same pattern as A.8 but sums `driverPayoutCents` from delivered orders.
 - [ ] **Instant payout button:** call Stripe's instant payout endpoint so the driver can transfer available balance to their bank immediately (not end-of-week batch). Stripe charges a 1% fee for instant payouts — surface this clearly in the UI.
 
+**Prerequisite for instant payouts:** Stripe requires the connected account to have a *debit card* (not just a bank account) on file. The endpoint must check this before attempting the payout, surface a clear error if missing, and offer a "Link your debit card" CTA via Stripe's hosted onboarding for instant payouts.
+
+- [ ] **Tests:**
+  - returns `NO_DEBIT_CARD` with onboarding URL when account has bank-account-only external account
+  - returns `NO_BALANCE` when available balance is 0
+  - successful payout when debit card is on file and balance > 0
+  - returns `INSTANT_PAYOUTS_UNAVAILABLE` when Stripe rejects the payout call (catch the `StripeInvalidRequestError` with that code)
+
 ```typescript
 // app/api/driver/payout/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
+import { createOnboardingLink } from '@/lib/stripe';
+import { env } from '@/lib/env';
+import Stripe from 'stripe';
 
 export async function POST() {
   const session = await auth();
@@ -2520,29 +2736,112 @@ export async function POST() {
   const profile = await prisma.driverProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile?.stripeConnectAccountId) return NextResponse.json({ error: 'NO_STRIPE' }, { status: 400 });
 
-  // Fetch available balance on the connected account
+  // 1. Verify a debit card is on file as an external account (instant payouts require this).
+  //    A bank account alone is not sufficient — Stripe requires the external_account to be of type "card".
+  const externalAccounts = await stripe.accounts.listExternalAccounts(
+    profile.stripeConnectAccountId,
+    { object: 'card', limit: 1 },
+  );
+  if (externalAccounts.data.length === 0) {
+    const link = await createOnboardingLink(
+      profile.stripeConnectAccountId,
+      `${env.APP_URL}/driver/earnings`,
+      `${env.APP_URL}/driver/earnings`,
+    );
+    return NextResponse.json({
+      error: 'NO_DEBIT_CARD',
+      message: 'Link a debit card to enable instant payouts. Bank transfers still arrive on the regular schedule.',
+      onboardingUrl: link.url,
+    }, { status: 400 });
+  }
+
+  // 2. Check balance
   const balance = await stripe.balance.retrieve({ stripeAccount: profile.stripeConnectAccountId });
   const available = balance.available.find(b => b.currency === 'usd')?.amount ?? 0;
   if (available <= 0) return NextResponse.json({ error: 'NO_BALANCE' }, { status: 400 });
 
-  const payout = await stripe.payouts.create(
-    { amount: available, currency: 'usd', method: 'instant' },
-    { stripeAccount: profile.stripeConnectAccountId },
-  );
-  return NextResponse.json({ payout });
+  // 3. Attempt the instant payout — Stripe may still reject for risk reasons even with a debit card.
+  try {
+    const payout = await stripe.payouts.create(
+      { amount: available, currency: 'usd', method: 'instant' },
+      { stripeAccount: profile.stripeConnectAccountId },
+    );
+    return NextResponse.json({ payout });
+  } catch (err) {
+    if (err instanceof Stripe.errors.StripeInvalidRequestError && err.code === 'instant_payouts_unavailable') {
+      return NextResponse.json({
+        error: 'INSTANT_PAYOUTS_UNAVAILABLE',
+        message: 'Instant payouts are temporarily unavailable on your account. Your earnings will arrive on the standard 2-day schedule.',
+      }, { status: 400 });
+    }
+    throw err;
+  }
 }
 ```
 
-- [ ] **UI:** earnings page shows current available balance + "Pay me now" button. Display 1% instant fee.
-- [ ] **Commit** `feat(driver): earnings dashboard + instant payout`
+- [ ] **UI:** earnings page shows current available balance + "Pay me now" button. Display 1% instant fee. If `NO_DEBIT_CARD` returned, render an inline card with "Link debit card" button that opens `onboardingUrl` in a new tab.
+- [ ] **Commit** `feat(driver): earnings dashboard + instant payout with debit-card gate`
 
-## B.18b: Thermal bag acknowledgment gate
+## B.18b: Thermal bag acknowledgment + optional photo verification
 
-**Files:** `app/driver/onboarding/page.tsx` (add step), `app/api/driver/profile/route.ts` (add field)
+**Files:** `app/driver/onboarding/page.tsx` (add step), `app/api/driver/profile/route.ts` (add fields), `app/api/driver/thermal-bag/route.ts`
 
-- [ ] Add a required step in driver onboarding: "I confirm I own or will obtain a professional insulated food delivery bag before accepting orders." Sets `thermalBagAcknowledged = true`.
-- [ ] Gate `isOnline = true` on `thermalBagAcknowledged = true`. If driver tries to go online without it, redirect to onboarding step.
-- [ ] **Commit** `feat(driver): thermal bag acknowledgment gate`
+**Requires Phase 0 schema amendment** (paired PR review): add nullable `thermalBagPhotoUrl String?` to `DriverProfile`. This is the minimum-risk additive change — does not affect any existing query.
+
+```prisma
+// add to DriverProfile model
+thermalBagPhotoUrl String?
+```
+
+The acknowledgment is mandatory; the photo is **optional but encouraged** because a photo is materially stronger evidence than a checkbox if a food-safety claim is ever made. Drivers who upload a photo get a "Verified bag" badge on their driver profile that the admin sees during approval — soft incentive, no gating.
+
+- [ ] **Tests:**
+  - acknowledgment alone allows `isOnline = true`
+  - going online without `thermalBagAcknowledged` returns `THERMAL_BAG_NOT_ACKED`
+  - photo upload sets `thermalBagPhotoUrl` and is independent of the acknowledgment flag
+  - the bag photo can be replaced (PATCH overwrites URL)
+
+- [ ] **Implement** `app/api/driver/thermal-bag/route.ts`:
+
+```typescript
+import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
+
+const Body = z.object({
+  acknowledged: z.boolean().optional(),
+  thermalBagPhotoUrl: z.string().url().optional(),
+});
+
+export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  const body = Body.parse(await req.json());
+  if (body.acknowledged === undefined && body.thermalBagPhotoUrl === undefined) {
+    return NextResponse.json({ error: 'NOTHING_TO_UPDATE' }, { status: 400 });
+  }
+  await prisma.driverProfile.update({
+    where: { userId: session.user.id },
+    data: {
+      ...(body.acknowledged !== undefined ? { thermalBagAcknowledged: body.acknowledged } : {}),
+      ...(body.thermalBagPhotoUrl !== undefined ? { thermalBagPhotoUrl: body.thermalBagPhotoUrl } : {}),
+    },
+  });
+  return NextResponse.json({ ok: true });
+}
+```
+
+- [ ] **Update `POST /api/driver/status`** (from B.14) to also reject `isOnline=true` when `thermalBagAcknowledged !== true`, returning `THERMAL_BAG_NOT_ACKED`.
+
+- [ ] **Update `lib/photo-upload.ts`** purpose enum to include `'driver-thermal-bag'`. This needs a one-line addition to the existing `ALLOWED_MIME`/`purpose` enum and the corresponding zod enum in `app/api/uploads/presign/route.ts`. Coordinate with Partner A on the shared lib edit.
+
+- [ ] **UI:**
+  - Onboarding step: required checkbox "I confirm I own (or will obtain before my first delivery) a professional insulated food delivery bag, minimum 13" × 13" × 10"."
+  - Optional photo upload: "Upload a photo of your bag now to get a Verified Bag badge on your driver profile." Uses presign endpoint with purpose `driver-thermal-bag`.
+  - Show a "Verified Bag ✓" badge on the driver dashboard if `thermalBagPhotoUrl` is set.
+
+- [ ] **Commit** `feat(driver): thermal bag acknowledgment + optional photo verification`
 
 ## B.19: Track B integration tests
 
