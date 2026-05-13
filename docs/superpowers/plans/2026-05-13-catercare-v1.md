@@ -160,6 +160,9 @@ PLATFORM_COMMISSION_PCT=11
 BUYER_SERVICE_FEE_PCT=9
 DRIVER_BASE_PAY_CENTS=400
 DRIVER_PER_MILE_CENTS=125
+# TX SB 541 cottage food annual gross cap in cents ($150,000)
+COTTAGE_CAP_GMV_CENTS=15000000
+CRON_SECRET=replace_me
 ```
 
 - [ ] **Step 2: Write `lib/env.ts`** (validates at boot)
@@ -187,6 +190,8 @@ const schema = z.object({
   BUYER_SERVICE_FEE_PCT: z.coerce.number().min(0).max(50),
   DRIVER_BASE_PAY_CENTS: z.coerce.number().int().nonnegative(),
   DRIVER_PER_MILE_CENTS: z.coerce.number().int().nonnegative(),
+  COTTAGE_CAP_GMV_CENTS: z.coerce.number().int().positive(),
+  CRON_SECRET: z.string().min(16),
 });
 
 export const env = schema.parse(process.env);
@@ -227,6 +232,8 @@ enum OrderState {
   COMPLETED CANCELLED REFUNDED
 }
 enum TosType { COOK BUYER DRIVER }
+// TX SB 541: Non-TCS = shelf-stable (no registration needed); TCS = refrigerated/prepared (DSHS registration required)
+enum DishCategory { NON_TCS TCS }
 
 model User {
   id           String     @id @default(cuid())
@@ -296,6 +303,14 @@ model CookProfile {
   idDocUrl             String?
   idStatus             VerificationStatus @default(NOT_SUBMITTED)
 
+  // TX SB 541: TCS dishes (prepared meals, cheesecakes, etc.) require DSHS registration
+  dshsRegistrationUrl    String?
+  dshsRegistrationStatus VerificationStatus @default(NOT_SUBMITTED)
+
+  // Running annual GMV — warn cook at $125K/$145K; alert admin at $148K (TX $150K cottage food cap)
+  annualGmvCents         Int      @default(0)
+  annualGmvYear          Int      @default(0) // year the counter applies to
+
   foodHandlerCertUrl   String?
   foodHandlerCertExpiresAt DateTime?
   foodHandlerCertStatus    VerificationStatus @default(NOT_SUBMITTED)
@@ -325,6 +340,9 @@ model Dish {
   allergens     String[]
   leadTimeHours Int      @default(4)
   isActive      Boolean  @default(true)
+  // TX SB 541 compliance
+  dishCategory             DishCategory @default(NON_TCS)
+  prohibitedItemsAcknowledged Boolean  @default(false) // cook confirmed no meat/seafood/ice cream
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   orderItems    OrderItem[]
@@ -380,6 +398,8 @@ model DriverProfile {
   backgroundCheckCompletedAt DateTime?
   stripeConnectAccountId String?
   stripeOnboardingComplete Boolean @default(false)
+  // Food safety: driver must acknowledge they own an insulated bag before going online
+  thermalBagAcknowledged Boolean @default(false)
   isOnline           Boolean  @default(false)
   currentLat         Float?
   currentLng         Float?
@@ -431,6 +451,8 @@ model Order {
   homeKitchenDisclosureAccepted Boolean
   homeKitchenDisclosureAcceptedAt DateTime
   cookCertSnapshotExpiresAt DateTime
+  // Snapshot of dish categories in this order — drives post-order DSHS compliance audit trail
+  containsTcsItems  Boolean @default(false)
 
   stripePaymentIntentId String?
   stripeChargeId        String?
@@ -501,6 +523,66 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 ```
 
 - [ ] **Step 6: Commit** `feat(db): initial schema with all entities + state machine`
+
+## Task 0.4b: TX regulatory helpers
+
+**Files:** `lib/cottage-food.ts`, `tests/cottage-food.test.ts`
+
+These are pure functions — no DB calls — so they can be tested instantly and reused across API routes.
+
+- [ ] **Step 1: Write failing test `tests/cottage-food.test.ts`**
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { isTcsDish, isProhibitedKeyword, gmvWarningLevel } from '@/lib/cottage-food';
+
+describe('cottage-food helpers', () => {
+  it('TCS dish detected', () => expect(isTcsDish('TCS')).toBe(true));
+  it('NON_TCS dish not TCS', () => expect(isTcsDish('NON_TCS')).toBe(false));
+  it('prohibited keyword: chicken', () => expect(isProhibitedKeyword('chicken biryani')).toBe(true));
+  it('non-prohibited: biryani rice', () => expect(isProhibitedKeyword('biryani rice')).toBe(false));
+  it('gmv warning: no warning below $125K', () => expect(gmvWarningLevel(12400000)).toBe('none'));
+  it('gmv warning: soft warn at $125K', () => expect(gmvWarningLevel(12500000)).toBe('soft'));
+  it('gmv warning: hard warn at $145K', () => expect(gmvWarningLevel(14500000)).toBe('hard'));
+  it('gmv warning: admin alert at $148K', () => expect(gmvWarningLevel(14800000)).toBe('admin'));
+});
+```
+
+- [ ] **Step 2: Implement `lib/cottage-food.ts`**
+
+```typescript
+import type { DishCategory } from '@prisma/client';
+
+// TX SB 541: prohibited items cannot be sold from a residential kitchen
+const PROHIBITED_KEYWORDS = [
+  'chicken', 'beef', 'pork', 'lamb', 'turkey', 'meat', 'poultry',
+  'shrimp', 'fish', 'seafood', 'salmon', 'tuna', 'crab', 'lobster',
+  'ice cream', 'gelato', 'sorbet',
+  'raw milk',
+];
+
+export function isTcsDish(category: DishCategory): boolean {
+  return category === 'TCS';
+}
+
+export function isProhibitedKeyword(dishName: string): boolean {
+  const lower = dishName.toLowerCase();
+  return PROHIBITED_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+// TX cottage food annual gross cap: $150,000
+export type GmvWarningLevel = 'none' | 'soft' | 'hard' | 'admin';
+
+export function gmvWarningLevel(annualGmvCents: number): GmvWarningLevel {
+  if (annualGmvCents >= 14_800_000) return 'admin'; // $148K — alert founder
+  if (annualGmvCents >= 14_500_000) return 'hard';  // $145K — strong warning to cook
+  if (annualGmvCents >= 12_500_000) return 'soft';  // $125K — early heads-up
+  return 'none';
+}
+```
+
+- [ ] **Step 3:** `pnpm test cottage-food` → all pass.
+- [ ] **Step 4:** Commit `feat(lib): TX cottage food compliance helpers`
 
 ## Task 0.5: Order state machine helper
 
@@ -861,7 +943,7 @@ const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'
 
 export async function presignUpload(args: {
   userId: string;
-  purpose: 'cook-id' | 'cook-cert' | 'dish' | 'cook-profile' | 'driver-license' | 'driver-insurance' | 'driver-id' | 'driver-car' | 'pickup-confirm' | 'dropoff-confirm';
+  purpose: 'cook-id' | 'cook-cert' | 'cook-dshs' | 'dish' | 'cook-profile' | 'driver-license' | 'driver-insurance' | 'driver-id' | 'driver-car' | 'pickup-confirm' | 'dropoff-confirm';
   contentType: string;
 }) {
   if (!ALLOWED_MIME.includes(args.contentType)) {
@@ -884,7 +966,7 @@ import { presignUpload } from '@/lib/photo-upload';
 import { z } from 'zod';
 
 const Body = z.object({
-  purpose: z.enum(['cook-id', 'cook-cert', 'dish', 'cook-profile', 'driver-license', 'driver-insurance', 'driver-id', 'driver-car', 'pickup-confirm', 'dropoff-confirm']),
+  purpose: z.enum(['cook-id', 'cook-cert', 'cook-dshs', 'dish', 'cook-profile', 'driver-license', 'driver-insurance', 'driver-id', 'driver-car', 'pickup-confirm', 'dropoff-confirm']),
   contentType: z.string(),
 });
 
@@ -1015,6 +1097,23 @@ export const templates = {
     subject: 'New delivery job',
     html: `<p>You claimed a delivery. Details: ${env.APP_URL}/driver/jobs/${orderId}</p>`,
   }),
+  // TX SB 541 compliance emails
+  cottageCapSoftWarning: (name: string, gmvDollars: number) => ({
+    subject: 'Heads up: you\'re approaching the TX cottage food earnings cap',
+    html: `<p>Hi ${name}, your CaterCare earnings this year have reached $${gmvDollars.toLocaleString()}. Texas law caps cottage food sales at $150,000/year. At $145,000 your listings will be paused until you obtain a commercial permit. <a href="${env.APP_URL}/cook/compliance">Learn more</a>.</p>`,
+  }),
+  cottageCapHardWarning: (name: string, gmvDollars: number) => ({
+    subject: 'Action required: TX cottage food cap approaching ($145K threshold)',
+    html: `<p>Hi ${name}, your earnings are at $${gmvDollars.toLocaleString()}. You must obtain a Dallas Retail Food Establishment Permit before reaching $150,000 or your listings will be auto-paused. <a href="${env.APP_URL}/cook/compliance">Upload your permit</a>.</p>`,
+  }),
+  dshsRegistrationRequired: (name: string) => ({
+    subject: 'DSHS registration required for your TCS dish',
+    html: `<p>Hi ${name}, one of your dishes is classified as TCS (refrigerated/prepared meal). Texas requires DSHS registration to sell these. <a href="${env.APP_URL}/cook/compliance">Upload registration</a> to activate the dish.</p>`,
+  }),
+  insuranceExpiringSoon: (name: string, daysLeft: number) => ({
+    subject: `Your auto insurance expires in ${daysLeft} days`,
+    html: `<p>Hi ${name}, your auto insurance on file expires in ${daysLeft} days. Update it at ${env.APP_URL}/driver/profile to stay active on CaterCare.</p>`,
+  }),
 };
 ```
 
@@ -1126,10 +1225,13 @@ async function main() {
             foodHandlerCertExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
             stripeOnboardingComplete: true,
             approvedAt: new Date(),
+            dshsRegistrationStatus: 'APPROVED',
+            annualGmvCents: 0,
+            annualGmvYear: new Date().getFullYear(),
             dishes: {
               create: [
-                { name: `Cook ${i} Special`, description: 'Tasty', priceCents: 1500, allergens: ['nuts'], leadTimeHours: 4 },
-                { name: `Side Dish ${i}`, description: 'Tasty side', priceCents: 600, allergens: [], leadTimeHours: 4 },
+                { name: `Cook ${i} Special`, description: 'Tasty', priceCents: 1500, allergens: ['nuts'], leadTimeHours: 4, dishCategory: 'TCS', prohibitedItemsAcknowledged: true },
+                { name: `Side Dish ${i}`, description: 'Tasty side', priceCents: 600, allergens: [], leadTimeHours: 4, dishCategory: 'NON_TCS', prohibitedItemsAcknowledged: true },
               ],
             },
           },
@@ -1158,6 +1260,8 @@ main().finally(() => prisma.$disconnect());
 
 - [ ] Both partners review `prisma/schema.prisma` together. Lock it.
 - [ ] Both review the cross-track API contracts above. Lock them.
+- [ ] Verify `lib/cottage-food.ts` tests pass — this lib is shared by both tracks.
+- [ ] Confirm `.env.example` includes `COTTAGE_CAP_GMV_CENTS=15000000` (the $150K TX limit) so it's configurable without a code change.
 - [ ] Tag the commit: `git tag phase-0-complete && git push --tags`
 - [ ] **Now split into Tracks A and B.**
 
@@ -1284,6 +1388,38 @@ export async function POST(req: Request) {
 - [ ] **UI:** file input + date picker for cert expiry. Reject if expiry is in the past.
 - [ ] **Commit** `feat(cook): food handler cert upload with expiry`
 
+## A.3b: DSHS registration upload (required for TCS dishes)
+
+**Files:** `app/cook/profile/dshs/page.tsx`, `app/api/cook/dshs/route.ts`
+
+- [ ] **Test:** stores URL + sets `dshsRegistrationStatus = PENDING`. Rejects if cook has no TCS dishes.
+- [ ] **Implement** `app/api/cook/dshs/route.ts`:
+
+```typescript
+import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
+
+const Body = z.object({ dshsRegistrationUrl: z.string().url() });
+
+export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  const { dshsRegistrationUrl } = Body.parse(await req.json());
+  await prisma.cookProfile.update({
+    where: { userId: session.user.id },
+    data: { dshsRegistrationUrl, dshsRegistrationStatus: 'PENDING' },
+  });
+  return NextResponse.json({ ok: true });
+}
+```
+
+- [ ] **Admin side:** add `dshsRegistrationStatus` to the cook approval queue (A.9) so admin can approve/reject DSHS docs separately from the main cook approval.
+- [ ] **Gating:** when admin approves DSHS registration, auto-activate any TCS dishes that were created in `isActive: false` pending this approval.
+- [ ] **UI:** `app/cook/profile/dshs/page.tsx` — shown only when cook has at least one TCS dish; calls `/api/uploads/presign` with purpose `cook-dshs`, then POSTs URL.
+- [ ] **Commit** `feat(cook): DSHS registration upload for TCS dishes`
+
 ## A.4: Stripe Connect onboarding for cooks
 
 **Files:** `app/cook/payouts/page.tsx`, `app/api/cook/stripe/onboard/route.ts`, `app/api/cook/stripe/return/route.ts`
@@ -1355,6 +1491,9 @@ const Body = z.object({
   portionSize: z.string().optional(),
   allergens: z.array(z.string()),
   leadTimeHours: z.number().int().min(0).max(168),
+  // TX SB 541 fields — required
+  dishCategory: z.enum(['NON_TCS', 'TCS']),
+  prohibitedItemsAcknowledged: z.literal(true), // must be explicitly true
 });
 
 export async function POST(req: Request) {
@@ -1363,6 +1502,16 @@ export async function POST(req: Request) {
   const profile = await prisma.cookProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile?.approvedAt) return NextResponse.json({ error: 'NOT_APPROVED' }, { status: 403 });
   const body = Body.parse(await req.json());
+
+  // TX SB 541: TCS dishes require DSHS registration to be active
+  if (body.dishCategory === 'TCS' && profile.dshsRegistrationStatus !== 'APPROVED') {
+    // Create dish but mark inactive; trigger email to upload DSHS registration
+    const dish = await prisma.dish.create({ data: { cookId: session.user.id, ...body, isActive: false } });
+    // Fire-and-forget email (awaited in production for error tracking)
+    void sendEmail({ to: session.user.email!, ...templates.dshsRegistrationRequired(profile.user?.name ?? 'Cook') });
+    return NextResponse.json({ dish, warning: 'TCS_REQUIRES_DSHS' });
+  }
+
   const dish = await prisma.dish.create({ data: { cookId: session.user.id, ...body } });
   return NextResponse.json({ dish });
 }
@@ -1711,6 +1860,72 @@ export async function POST(req: Request) {
 
 - [ ] Configure Vercel Cron in `vercel.json` to hit this daily.
 - [ ] **Commit** `feat(cook): auto-disable on cert expiry + reminder emails`
+
+## A.14b: Annual GMV cap tracking + warnings (cron)
+
+**Files:** `app/api/cron/check-gmv-cap/route.ts`, `tests/cook/gmv-cap.test.ts`
+
+Runs daily. Resets `annualGmvCents` to 0 on Jan 1 each year, then checks all cooks against TX $150K cap thresholds.
+
+- [ ] **Test:** cooks at $125K get `soft` email; cooks at $145K get `hard` email; cooks over $148K trigger admin alert.
+- [ ] **Implement:**
+
+```typescript
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { sendEmail, templates } from '@/lib/email';
+import { gmvWarningLevel } from '@/lib/cottage-food';
+
+export async function POST(req: Request) {
+  if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+  const currentYear = new Date().getFullYear();
+  const cooks = await prisma.cookProfile.findMany({
+    where: { approvedAt: { not: null } },
+    include: { user: true },
+  });
+  for (const c of cooks) {
+    // Reset counter on new year
+    if (c.annualGmvYear !== currentYear) {
+      await prisma.cookProfile.update({ where: { userId: c.userId }, data: { annualGmvCents: 0, annualGmvYear: currentYear } });
+      continue;
+    }
+    const level = gmvWarningLevel(c.annualGmvCents);
+    const gmvDollars = Math.round(c.annualGmvCents / 100);
+    if (level === 'soft') {
+      const t = templates.cottageCapSoftWarning(c.user.name ?? 'Cook', gmvDollars);
+      await sendEmail({ to: c.user.email, subject: t.subject, html: t.html });
+    } else if (level === 'hard') {
+      const t = templates.cottageCapHardWarning(c.user.name ?? 'Cook', gmvDollars);
+      await sendEmail({ to: c.user.email, subject: t.subject, html: t.html });
+    } else if (level === 'admin') {
+      const admin = await prisma.user.findFirst({ where: { roles: { has: 'ADMIN' } } });
+      if (admin) {
+        await sendEmail({
+          to: admin.email,
+          subject: `⚠️ Cook ${c.user.name} is at $${gmvDollars.toLocaleString()} — approaching TX $150K cap`,
+          html: `<p>Cook ${c.user.name} (${c.user.email}) has earned $${gmvDollars.toLocaleString()} this year. Review at ${process.env.APP_URL}/admin/cooks/${c.userId}.</p>`,
+        });
+      }
+    }
+  }
+  return NextResponse.json({ checked: cooks.length });
+}
+```
+
+- [ ] Add `annualGmvCents` increment to the order completion webhook in Track B (`POST /api/stripe-webhook` → `COMPLETED` event).
+- [ ] Add to `vercel.json` cron (daily, same job as cert-expiry check is fine to combine).
+- [ ] **Commit** `feat(cook): annual GMV cap tracking + TX cottage food warnings`
+
+## A.14c: Auto insurance expiry reminders for drivers (cron)
+
+**Files:** Add to existing `app/api/cron/check-cert-expiry/route.ts`
+
+- [ ] Extend the cert expiry cron to also check `DriverProfile.insuranceExpiresAt` at 30/14/7 days.
+- [ ] On expiry, set `DriverProfile.isOnline = false` and `DriverProfile.docsStatus = 'NOT_SUBMITTED'` (existing behaviour).
+- [ ] Use `templates.insuranceExpiringSoon` email template.
+- [ ] **Commit** `feat(driver): insurance expiry reminders in cron`
 
 ## A.15: Track A integration tests
 
@@ -2285,12 +2500,49 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 - [ ] **UI:** pickup screen with "Open in Maps" button + photo capture; dropoff screen same pattern.
 - [ ] **Commit** `feat(driver): pickup + dropoff flow + driver payout transfer`
 
-## B.18: Driver earnings dashboard
+## B.18: Driver earnings dashboard + instant payout
 
-**Files:** `app/driver/earnings/page.tsx`, `app/api/driver/earnings/route.ts`
+**Files:** `app/driver/earnings/page.tsx`, `app/api/driver/earnings/route.ts`, `app/api/driver/payout/route.ts`
 
 - [ ] Same pattern as A.8 but sums `driverPayoutCents` from delivered orders.
-- [ ] **Commit** `feat(driver): earnings dashboard`
+- [ ] **Instant payout button:** call Stripe's instant payout endpoint so the driver can transfer available balance to their bank immediately (not end-of-week batch). Stripe charges a 1% fee for instant payouts — surface this clearly in the UI.
+
+```typescript
+// app/api/driver/payout/route.ts
+import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { stripe } from '@/lib/stripe';
+
+export async function POST() {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  const profile = await prisma.driverProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile?.stripeConnectAccountId) return NextResponse.json({ error: 'NO_STRIPE' }, { status: 400 });
+
+  // Fetch available balance on the connected account
+  const balance = await stripe.balance.retrieve({ stripeAccount: profile.stripeConnectAccountId });
+  const available = balance.available.find(b => b.currency === 'usd')?.amount ?? 0;
+  if (available <= 0) return NextResponse.json({ error: 'NO_BALANCE' }, { status: 400 });
+
+  const payout = await stripe.payouts.create(
+    { amount: available, currency: 'usd', method: 'instant' },
+    { stripeAccount: profile.stripeConnectAccountId },
+  );
+  return NextResponse.json({ payout });
+}
+```
+
+- [ ] **UI:** earnings page shows current available balance + "Pay me now" button. Display 1% instant fee.
+- [ ] **Commit** `feat(driver): earnings dashboard + instant payout`
+
+## B.18b: Thermal bag acknowledgment gate
+
+**Files:** `app/driver/onboarding/page.tsx` (add step), `app/api/driver/profile/route.ts` (add field)
+
+- [ ] Add a required step in driver onboarding: "I confirm I own or will obtain a professional insulated food delivery bag before accepting orders." Sets `thermalBagAcknowledged = true`.
+- [ ] Gate `isOnline = true` on `thermalBagAcknowledged = true`. If driver tries to go online without it, redirect to onboarding step.
+- [ ] **Commit** `feat(driver): thermal bag acknowledgment gate`
 
 ## B.19: Track B integration tests
 
