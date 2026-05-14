@@ -1,0 +1,62 @@
+'use client';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+
+export default function CookPayoutsPage() {
+  const [profile, setProfile] = useState<{ stripeOnboardingComplete: boolean } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/cook/profile')
+      .then((r) => r.json())
+      .then((j) => setProfile(j.profile));
+  }, []);
+
+  const startOnboarding = async () => {
+    setSubmitting(true);
+    const res = await fetch('/api/cook/stripe/onboard', { method: 'POST' });
+    const json = await res.json();
+    if (json.url) window.location.href = json.url;
+    setSubmitting(false);
+  };
+
+  return (
+    <main className="min-h-screen bg-slate-50">
+      <header className="border-b bg-white">
+        <div className="max-w-3xl mx-auto px-4 py-4">
+          <Link href="/cook" className="text-sm text-slate-600 hover:text-slate-900">
+            ← Dashboard
+          </Link>
+        </div>
+      </header>
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        <h1 className="text-3xl font-bold">Payout setup</h1>
+        <Card>
+          {profile?.stripeOnboardingComplete ? (
+            <>
+              <p className="text-green-700 font-medium">✓ Your payout account is linked.</p>
+              <p className="text-sm text-slate-600 mt-2">
+                After each delivered order, your portion transfers directly to your bank.
+              </p>
+              <Button variant="secondary" className="mt-3" onClick={startOnboarding} disabled={submitting}>
+                Update payout info
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm mb-3">
+                Connect a bank account through Stripe to receive payouts. CaterCare takes
+                10–12% commission and the rest is yours.
+              </p>
+              <Button onClick={startOnboarding} disabled={submitting}>
+                {submitting ? '…' : 'Start Stripe onboarding'}
+              </Button>
+            </>
+          )}
+        </Card>
+      </div>
+    </main>
+  );
+}
