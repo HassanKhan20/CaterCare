@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 
 const SEEDED_USERS = [
@@ -16,15 +17,14 @@ export function DevSignIn() {
 
   const signInAs = async (email: string, dest: string) => {
     setSubmitting(email);
-    const res = await fetch('/api/dev/sign-in-as', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email }),
+    const result = await signIn('dev-credentials', {
+      email,
+      redirect: false,
     });
-    if (res.ok) {
+    if (result?.ok) {
       window.location.href = dest;
     } else {
-      alert(`Failed: ${(await res.json()).error}`);
+      alert(`Failed: ${result?.error ?? 'unknown error'}`);
       setSubmitting(null);
     }
   };
