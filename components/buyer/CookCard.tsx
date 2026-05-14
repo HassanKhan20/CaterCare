@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Card } from '@/components/ui/Card';
 
 type Cook = {
   id: string;
@@ -14,34 +13,48 @@ type Cook = {
 
 export function CookCard({ cook }: { cook: Cook }) {
   return (
-    <Link href={`/cooks/${cook.id}`}>
-      <Card className="hover:shadow-md transition cursor-pointer h-full">
-        <div className="flex items-start gap-3">
-          {cook.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={cook.photoUrl}
-              alt={cook.name ?? 'cook'}
-              className="w-16 h-16 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold">
-              {(cook.name ?? '?').slice(0, 1)}
-            </div>
-          )}
-          <div className="flex-1">
-            <h3 className="font-bold">{cook.name}</h3>
-            <p className="text-sm text-slate-600">{cook.cuisineTags.join(' · ')}</p>
-            <p className="text-xs text-slate-500">
-              {cook.distanceMiles.toFixed(1)} mi · {cook.dishCount} dish
-              {cook.dishCount === 1 ? '' : 'es'}
-            </p>
-          </div>
+    <Link
+      href={`/cooks/${cook.id}`}
+      className="group block rounded-xl border border-slate-200 bg-white overflow-hidden hover:shadow-md hover:border-brand-300 transition-all"
+    >
+      <div className="h-32 bg-gradient-to-br from-brand-100 to-brand-200 relative flex items-center justify-center">
+        {cook.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cook.photoUrl}
+            alt={cook.name ?? 'cook'}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-5xl font-bold text-brand-700/40">
+            {(cook.name ?? '?').slice(0, 1)}
+          </span>
+        )}
+        <span className="absolute top-2 right-2 px-2 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-medium text-slate-700">
+          {cook.distanceMiles.toFixed(1)} mi
+        </span>
+      </div>
+      <div className="p-4">
+        <h3 className="font-bold text-slate-900 group-hover:text-brand-700 transition-colors">
+          {cook.name}
+        </h3>
+        <div className="flex flex-wrap gap-1 mt-1">
+          {cook.cuisineTags.map((t) => (
+            <span
+              key={t}
+              className="text-xs px-2 py-0.5 bg-brand-50 text-brand-800 rounded-full"
+            >
+              {t}
+            </span>
+          ))}
         </div>
         {cook.story && (
-          <p className="text-sm mt-3 line-clamp-2 text-slate-700">{cook.story}</p>
+          <p className="text-sm text-slate-600 line-clamp-2 mt-2">{cook.story}</p>
         )}
-      </Card>
+        <p className="text-xs text-slate-500 mt-2">
+          {cook.dishCount} dish{cook.dishCount === 1 ? '' : 'es'} · {cook.neighborhood}
+        </p>
+      </div>
     </Link>
   );
 }
