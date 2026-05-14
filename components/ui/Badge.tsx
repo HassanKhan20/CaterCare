@@ -1,18 +1,18 @@
 import clsx from 'clsx';
 
 const STATE_STYLES: Record<string, string> = {
-  DRAFT:             'bg-slate-100 text-slate-600',
-  PLACED:            'bg-blue-50 text-blue-700',
-  COOK_ACCEPTED:     'bg-blue-100 text-blue-800',
-  COOK_DECLINED:     'bg-red-50 text-red-700',
-  PREPARING:         'bg-amber-50 text-amber-800',
-  READY_FOR_PICKUP:  'bg-amber-100 text-amber-800',
-  DRIVER_ASSIGNED:   'bg-violet-50 text-violet-700',
-  PICKED_UP:         'bg-violet-100 text-violet-800',
-  DELIVERED:         'bg-green-50 text-green-700',
-  COMPLETED:         'bg-green-100 text-green-800',
-  CANCELLED:         'bg-red-100 text-red-700',
-  REFUNDED:          'bg-slate-100 text-slate-500',
+  DRAFT:             'bg-[var(--color-surface-2)] text-[#f5f1ec]/60',
+  PLACED:            'bg-blue-500/15 text-blue-300 border border-blue-500/30',
+  COOK_ACCEPTED:     'bg-blue-500/20 text-blue-200 border border-blue-500/40',
+  COOK_DECLINED:     'bg-red-500/15 text-red-300 border border-red-500/30',
+  PREPARING:         'bg-amber-500/15 text-amber-300 border border-amber-500/30',
+  READY_FOR_PICKUP:  'bg-amber-500/20 text-amber-200 border border-amber-500/40',
+  DRIVER_ASSIGNED:   'bg-violet-500/15 text-violet-300 border border-violet-500/30',
+  PICKED_UP:         'bg-violet-500/20 text-violet-200 border border-violet-500/40',
+  DELIVERED:         'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
+  COMPLETED:         'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40',
+  CANCELLED:         'bg-red-500/20 text-red-200 border border-red-500/40',
+  REFUNDED:          'bg-[var(--color-surface-2)] text-[#f5f1ec]/40',
 };
 
 const STATE_LABELS: Record<string, string> = {
@@ -36,7 +36,7 @@ type Props = {
 };
 
 export function Badge({ state, className }: Props) {
-  const style = STATE_STYLES[state] ?? 'bg-slate-100 text-slate-600';
+  const style = STATE_STYLES[state] ?? 'bg-[var(--color-surface-2)] text-[#f5f1ec]/60';
   const label = STATE_LABELS[state] ?? state;
   return (
     <span

@@ -15,7 +15,6 @@ export function BuyerNavBar() {
     };
     update();
     window.addEventListener('storage', update);
-    // Also poll since cart changes in-tab don't fire storage events
     const t = setInterval(update, 1000);
     return () => {
       window.removeEventListener('storage', update);
@@ -25,15 +24,15 @@ export function BuyerNavBar() {
 
   const active = (prefix: string) =>
     pathname === prefix || pathname.startsWith(prefix + '/')
-      ? 'text-brand-600 font-semibold'
-      : 'text-slate-600 hover:text-slate-900';
+      ? 'text-brand-400 font-semibold'
+      : 'text-[#f5f1ec]/60 hover:text-[#f5f1ec]';
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-sm shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 border-b border-[var(--color-surface-3)] bg-[var(--color-surface-0)]/90 backdrop-blur-md">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link
           href="/browse"
-          className="text-xl font-bold tracking-tight text-brand-600 hover:text-brand-700 transition-colors"
+          className="text-xl font-bold tracking-tight hover:text-brand-400 transition-colors"
         >
           CaterCare
         </Link>
@@ -51,7 +50,7 @@ export function BuyerNavBar() {
           <Link href="/cart" className={`relative text-sm transition-colors ${active('/cart')}`}>
             Cart
             {cartCount > 0 && (
-              <span className="absolute -top-2.5 -right-3.5 min-w-[1.1rem] h-[1.1rem] px-0.5 flex items-center justify-center bg-brand-500 text-white text-[10px] font-bold rounded-full">
+              <span className="absolute -top-2.5 -right-3.5 min-w-[1.1rem] h-[1.1rem] px-0.5 flex items-center justify-center bg-brand-400 text-[#1a1715] text-[10px] font-bold rounded-full">
                 {cartCount > 9 ? '9+' : cartCount}
               </span>
             )}

@@ -30,11 +30,11 @@ export function DevSignIn() {
   };
 
   return (
-    <div className="pt-4 border-t border-dashed border-slate-300">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+    <div className="pt-5 border-t border-dashed border-[var(--color-surface-3)]">
+      <p className="text-xs font-semibold text-[#f5f1ec]/40 uppercase tracking-wider mb-1">
         Dev shortcuts
       </p>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-[#f5f1ec]/40 mb-3">
         Skip OAuth in local dev. Disabled in production.
       </p>
       <div className="space-y-2">

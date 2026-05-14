@@ -19,13 +19,9 @@ declare module 'next-auth' {
   }
 }
 
-declare module 'next-auth/jwt' {
-  interface JWT {
-    userId?: string;
-    roles?: UserRole[];
-    status?: UserStatus;
-  }
-}
+// The JWT module augmentation kept causing TS to flap on the next-auth v5 beta
+// types. The token is `Record<string, unknown>`-ish under the hood; we read it
+// with explicit casts in the callbacks below.
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -70,18 +66,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // when the user signs in again. Route handlers running in Node can use
     // `requireRole` to re-check against the DB for immediate suspension effect.
     async jwt({ token, user }) {
+      const t = token as Record<string, unknown>;
       if (user) {
-        token.userId = user.id;
-        token.roles = user.roles ?? [];
-        token.status = user.status ?? 'PENDING';
+        t.userId = user.id;
+        t.roles = user.roles ?? [];
+        t.status = user.status ?? 'PENDING';
       }
       return token;
     },
     async session({ session, token }) {
-      if (token.userId && session.user) {
-        session.user.id = token.userId;
-        session.user.roles = token.roles ?? [];
-        session.user.status = token.status ?? 'PENDING';
+      const t = token as Record<string, unknown>;
+      if (t.userId && session.user) {
+        session.user.id = t.userId as string;
+        session.user.roles = (t.roles as UserRole[]) ?? [];
+        session.user.status = (t.status as UserStatus) ?? 'PENDING';
       }
       return session;
     },

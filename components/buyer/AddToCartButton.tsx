@@ -51,15 +51,15 @@ export function AddToCartButton(props: Props) {
 
   if (confirming) {
     return (
-      <div className="space-y-2">
-        <p className="text-sm text-amber-700">
+      <div className="rounded-2xl bg-[var(--color-surface-1)] border border-amber-500/30 p-4 space-y-3">
+        <p className="text-sm text-amber-300">
           Your cart already has items from another cook. Replace cart?
         </p>
         <div className="flex gap-2">
-          <Button variant="danger" onClick={() => tryAdd(true)}>
+          <Button variant="danger" onClick={() => tryAdd(true)} className="flex-1">
             Replace cart
           </Button>
-          <Button variant="secondary" onClick={() => setConfirming(false)}>
+          <Button variant="secondary" onClick={() => setConfirming(false)} className="flex-1">
             Cancel
           </Button>
         </div>
@@ -67,5 +67,9 @@ export function AddToCartButton(props: Props) {
     );
   }
 
-  return <Button onClick={() => tryAdd(false)}>Add to cart</Button>;
+  return (
+    <Button size="lg" className="w-full" onClick={() => tryAdd(false)}>
+      Add to cart · ${(props.priceCents / 100).toFixed(2)}
+    </Button>
+  );
 }

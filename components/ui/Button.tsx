@@ -8,21 +8,21 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({ variant = 'primary', size = 'md', className, ...props }: Props) {
   const base =
-    'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 ' +
-    'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 ' +
+    'inline-flex items-center justify-center font-semibold rounded-full transition-all duration-150 ' +
+    'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0f0d0c] focus:ring-brand-400 ' +
     'disabled:opacity-50 disabled:cursor-not-allowed';
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
+    sm: 'px-4 py-2 text-sm',
+    md: 'px-5 py-2.5 text-sm',
+    lg: 'px-7 py-3.5 text-base',
   };
   const variants = {
     primary:
-      'bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white shadow-sm hover:shadow',
+      'bg-brand-400 hover:bg-brand-300 active:bg-brand-500 text-[#1a1715] shadow-md hover:shadow-lg',
     secondary:
-      'bg-white border border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-slate-900',
-    ghost: 'hover:bg-slate-100 text-slate-700 hover:text-slate-900',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm',
+      'bg-[var(--color-surface-2)] border border-[var(--color-surface-3)] hover:bg-[var(--color-surface-3)] text-[#f5f1ec]',
+    ghost: 'hover:bg-[var(--color-surface-2)] text-[#f5f1ec]/80 hover:text-[#f5f1ec]',
+    danger: 'bg-red-500 hover:bg-red-400 text-white shadow-md',
   };
   return (
     <button className={clsx(base, sizes[size], variants[variant], className)} {...props} />
