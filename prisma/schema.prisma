@@ -1,0 +1,352 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  COOK
+  BUYER
+  DRIVER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum VerificationStatus {
+  NOT_SUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BackgroundCheckStatus {
+  NOT_STARTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderState {
+  DRAFT
+  PLACED
+  COOK_ACCEPTED
+  COOK_DECLINED
+  PREPARING
+  READY_FOR_PICKUP
+  DRIVER_ASSIGNED
+  PICKED_UP
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum TosType {
+  COOK
+  BUYER
+  DRIVER
+}
+
+// TX SB 541: Non-TCS = shelf-stable (no registration needed); TCS = refrigerated/prepared (DSHS registration required)
+enum DishCategory {
+  NON_TCS
+  TCS
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  emailVerified DateTime?
+  name          String?
+  phone         String?
+  roles         UserRole[]
+  status        UserStatus @default(PENDING)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  cookProfile    CookProfile?
+  buyerProfile   BuyerProfile?
+  driverProfile  DriverProfile?
+  tosAcceptances TosAcceptance[]
+  sessions       Session[]
+  accounts       Account[]
+  buyerOrders    Order[]  @relation("BuyerOrders")
+  cookOrders     Order[]  @relation("CookOrders")
+  driverOrders   Order[]  @relation("DriverOrders")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model CookProfile {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  photoUrl     String?
+  story        String? @db.Text
+  cuisineTags  String[]
+  neighborhood String?
+  addressLine  String?
+  lat          Float?
+  lng          Float?
+
+  idDocUrl String?
+  idStatus VerificationStatus @default(NOT_SUBMITTED)
+
+  foodHandlerCertUrl       String?
+  foodHandlerCertExpiresAt DateTime?
+  foodHandlerCertStatus    VerificationStatus @default(NOT_SUBMITTED)
+
+  // TX SB 541: TCS dishes (prepared meals, cheesecakes, etc.) require DSHS registration
+  dshsRegistrationUrl    String?
+  dshsRegistrationStatus VerificationStatus @default(NOT_SUBMITTED)
+
+  // Running annual GMV — warn cook at $125K/$145K; alert admin at $148K (TX $150K cottage food cap)
+  annualGmvCents Int @default(0)
+  annualGmvYear  Int @default(0) // year the counter applies to
+
+  stripeConnectAccountId   String?
+  stripeOnboardingComplete Boolean @default(false)
+
+  approvedAt       DateTime?
+  approvedByUserId String?
+  rejectedReason   String?
+
+  dishes       Dish[]
+  availability CookAvailability[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Dish {
+  id            String   @id @default(cuid())
+  cookId        String
+  cook          CookProfile @relation(fields: [cookId], references: [userId], onDelete: Cascade)
+  name          String
+  description   String   @db.Text
+  photoUrl      String?
+  priceCents    Int
+  portionSize   String?
+  allergens     String[]
+  leadTimeHours Int      @default(4)
+  isActive      Boolean  @default(true)
+
+  // TX SB 541 compliance
+  dishCategory                DishCategory @default(NON_TCS)
+  prohibitedItemsAcknowledged Boolean      @default(false) // cook confirmed no meat/seafood/ice cream
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  orderItems OrderItem[]
+
+  @@index([cookId, isActive])
+}
+
+model CookAvailability {
+  id                 String      @id @default(cuid())
+  cookId             String
+  cook               CookProfile @relation(fields: [cookId], references: [userId], onDelete: Cascade)
+  dayOfWeek          Int         // 0=Sun..6=Sat
+  startTime          String      // "09:00"
+  endTime            String      // "20:00"
+  orderCutoffMinutes Int         @default(60)
+  maxOrdersPerDay    Int         @default(10)
+
+  @@unique([cookId, dayOfWeek])
+}
+
+model BuyerProfile {
+  userId    String         @id
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addresses BuyerAddress[]
+  createdAt DateTime       @default(now())
+}
+
+model BuyerAddress {
+  id        String       @id @default(cuid())
+  buyerId   String
+  buyer     BuyerProfile @relation(fields: [buyerId], references: [userId], onDelete: Cascade)
+  label     String       // "Home", "Office"
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  zip       String
+  lat       Float
+  lng       Float
+  isDefault Boolean      @default(false)
+}
+
+model DriverProfile {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  licenseDocUrl      String?
+  licenseExpiresAt   DateTime?
+  insuranceDocUrl    String?
+  insuranceExpiresAt DateTime?
+  carPhotoUrl        String?
+  idDocUrl           String?
+  dateOfBirth        DateTime?
+
+  docsStatus                 VerificationStatus    @default(NOT_SUBMITTED)
+  backgroundCheckStatus      BackgroundCheckStatus @default(NOT_STARTED)
+  backgroundCheckCompletedAt DateTime?
+
+  stripeConnectAccountId   String?
+  stripeOnboardingComplete Boolean @default(false)
+
+  // Food safety: driver must acknowledge they own an insulated bag before going online
+  thermalBagAcknowledged Boolean @default(false)
+  thermalBagPhotoUrl     String? // optional photo verification — stronger evidence than checkbox alone
+
+  isOnline   Boolean @default(false)
+  currentLat Float?
+  currentLng Float?
+
+  approvedAt       DateTime?
+  approvedByUserId String?
+  rejectedReason   String?
+}
+
+model Order {
+  id       String @id @default(cuid())
+  buyerId  String
+  buyer    User   @relation("BuyerOrders", fields: [buyerId], references: [id])
+  cookId   String
+  cook     User   @relation("CookOrders", fields: [cookId], references: [id])
+  driverId String?
+  driver   User?  @relation("DriverOrders", fields: [driverId], references: [id])
+
+  state OrderState @default(DRAFT)
+
+  subtotalCents        Int
+  cookCommissionCents  Int // platform cut from cook
+  buyerServiceFeeCents Int // platform fee from buyer
+  deliveryFeeCents     Int // buyer pays
+  driverBasePayCents   Int // platform pays driver
+  driverTipCents       Int @default(0)
+  totalChargedCents    Int // what buyer's card sees
+  cookPayoutCents      Int // subtotal - cookCommission
+  driverPayoutCents    Int // basePay + tip
+  platformRevenueCents Int // cookCommission + serviceFee + (deliveryFee - basePay)
+
+  pickupAddressLine   String
+  pickupLat           Float
+  pickupLng           Float
+  deliveryAddressLine String
+  deliveryLat         Float
+  deliveryLng         Float
+  distanceMiles       Float
+
+  requestedDeliveryAt DateTime
+  placedAt            DateTime?
+  acceptedAt          DateTime?
+  preparingAt         DateTime?
+  readyAt             DateTime?
+  pickedUpAt          DateTime?
+  deliveredAt         DateTime?
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+
+  homeKitchenDisclosureAccepted   Boolean
+  homeKitchenDisclosureAcceptedAt DateTime
+  cookCertSnapshotExpiresAt       DateTime
+  // Snapshot of dish categories in this order — drives post-order DSHS compliance audit trail
+  containsTcsItems                Boolean  @default(false)
+
+  stripePaymentIntentId String?
+  stripeChargeId        String?
+
+  buyerNote          String?
+  cancellationReason String?
+
+  items  OrderItem[]
+  events OrderEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([state])
+  @@index([cookId, state])
+  @@index([driverId, state])
+  @@index([buyerId, createdAt])
+}
+
+model OrderItem {
+  id               String @id @default(cuid())
+  orderId          String
+  order            Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dishId           String
+  dish             Dish   @relation(fields: [dishId], references: [id])
+  dishNameSnapshot String
+  unitPriceCents   Int
+  quantity         Int
+}
+
+model OrderEvent {
+  id          String      @id @default(cuid())
+  orderId     String
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromState   OrderState?
+  toState     OrderState
+  actorUserId String?
+  note        String?
+  createdAt   DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model TosAcceptance {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tosType    TosType
+  version    String
+  acceptedAt DateTime @default(now())
+  ipAddress  String?
+
+  @@index([userId, tosType])
+}
