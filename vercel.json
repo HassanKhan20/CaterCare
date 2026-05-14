@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/check-cert-expiry", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/check-gmv-cap", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/check-insurance-expiry", "schedule": "0 8 * * *" }
+  ]
+}
