@@ -18,7 +18,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { driver: { include: { driverProfile: true } } },
+    select: {
+      id: true,
+      driverId: true,
+      state: true,
+      cookId: true,
+      cookPayoutCents: true,
+      driverPayoutCents: true,
+    },
   });
   if (!order || order.driverId !== session.user.id) {
     return NextResponse.json({ error: 'NOT_YOURS' }, { status: 404 });
@@ -69,7 +76,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Driver transfer happens OUTSIDE the DB transaction. If it fails, the order is still
   // DELIVERED and admin can retry the transfer via the admin order intervention screen.
   if (body.to === 'DELIVERED') {
-    const driverStripe = order.driver?.driverProfile?.stripeConnectAccountId;
+    const driverProfile = await prisma.driverProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { stripeConnectAccountId: true },
+    });
+    const driverStripe = driverProfile?.stripeConnectAccountId;
     if (driverStripe) {
       try {
         await transferToDriver({

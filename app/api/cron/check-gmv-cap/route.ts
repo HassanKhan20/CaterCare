@@ -2,9 +2,18 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendEmail, templates } from '@/lib/email';
 import { gmvWarningLevel } from '@/lib/cottage-food';
+import { env } from '@/lib/env';
+import crypto from 'crypto';
 
 function authorized(req: Request): boolean {
-  return req.headers.get('authorization') === `Bearer ${process.env.CRON_SECRET}`;
+  const header = req.headers.get('authorization') ?? '';
+  const expected = `Bearer ${env.CRON_SECRET}`;
+  if (header.length !== expected.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(req: Request) {

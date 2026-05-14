@@ -1,18 +1,23 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import type { OrderState } from '@prisma/client';
+import { OrderState } from '@prisma/client';
+
+const validOrderStates = new Set(Object.values(OrderState));
 
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const url = new URL(req.url);
   const stateParam = url.searchParams.get('state');
+  const state = stateParam && validOrderStates.has(stateParam as OrderState)
+    ? (stateParam as OrderState)
+    : undefined;
 
   const orders = await prisma.order.findMany({
     where: {
       cookId: session.user.id,
-      ...(stateParam ? { state: stateParam as OrderState } : {}),
+      ...(state ? { state } : {}),
     },
     include: {
       items: { include: { dish: { select: { name: true } } } },

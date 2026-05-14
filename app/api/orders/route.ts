@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { haversineMiles } from '@/lib/geo';
 import { computeFinancials, createOrderPaymentIntent } from '@/lib/stripe';
 import { recordAcceptance } from '@/lib/tos';
+import { env } from '@/lib/env';
 import { z } from 'zod';
 
 const Body = z.object({
@@ -11,7 +12,10 @@ const Body = z.object({
   items: z.array(z.object({ dishId: z.string(), quantity: z.number().int().min(1).max(20) })),
   deliveryAddressId: z.string(),
   tipCents: z.number().int().min(0).max(20000),
-  requestedDeliveryAt: z.string().datetime(),
+  requestedDeliveryAt: z.string().datetime().refine(
+    (v) => new Date(v) > new Date(),
+    { message: 'Delivery time must be in the future' },
+  ),
   buyerNote: z.string().max(500).optional(),
   homeKitchenDisclosureAccepted: z.literal(true),
 });
@@ -33,7 +37,7 @@ export async function POST(req: Request) {
         isActive: true,
       },
     }),
-    prisma.buyerAddress.findUnique({ where: { id: body.deliveryAddressId } }),
+    prisma.buyerAddress.findUnique({ where: { id: body.deliveryAddressId, buyerId: session.user.id } }),
   ]);
   if (!cook?.approvedAt || !cook.stripeOnboardingComplete) {
     return NextResponse.json({ error: 'COOK_NOT_READY' }, { status: 400 });
@@ -57,10 +61,10 @@ export async function POST(req: Request) {
     subtotalCents,
     distanceMiles,
     tipCents: body.tipCents,
-    commissionPct: Number(process.env.PLATFORM_COMMISSION_PCT ?? 11),
-    serviceFeePct: Number(process.env.BUYER_SERVICE_FEE_PCT ?? 9),
-    driverBaseCents: Number(process.env.DRIVER_BASE_PAY_CENTS ?? 400),
-    driverPerMileCents: Number(process.env.DRIVER_PER_MILE_CENTS ?? 125),
+    commissionPct: env.PLATFORM_COMMISSION_PCT,
+    serviceFeePct: env.BUYER_SERVICE_FEE_PCT,
+    driverBaseCents: env.DRIVER_BASE_PAY_CENTS,
+    driverPerMileCents: env.DRIVER_PER_MILE_CENTS,
   });
   const totalChargedCents =
     f.subtotalCents + f.buyerServiceFeeCents + f.deliveryFeeCents + f.driverTipCents;

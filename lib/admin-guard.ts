@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireRole, UnauthorizedError } from '@/lib/auth';
 
-/**
- * Wraps an admin route handler so all the UNAUTHORIZED plumbing lives in one place.
- * The handler receives the authenticated admin user as its first argument, followed
- * by whatever Next.js passes (e.g. params).
- */
+type AdminUser = Awaited<ReturnType<typeof requireRole>>;
+
 export function adminGuard<TArgs extends unknown[]>(
-  handler: (admin: { id: string; email?: string | null }, ...args: TArgs) => Promise<Response>,
+  handler: (admin: AdminUser, ...args: TArgs) => Promise<Response>,
 ) {
   return async (...args: TArgs): Promise<Response> => {
     try {

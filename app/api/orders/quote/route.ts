@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { haversineMiles } from '@/lib/geo';
 import { computeFinancials } from '@/lib/stripe';
+import { env } from '@/lib/env';
 import { z } from 'zod';
 
 const Body = z.object({
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
         isActive: true,
       },
     }),
-    prisma.buyerAddress.findUnique({ where: { id: body.deliveryAddressId } }),
+    prisma.buyerAddress.findUnique({ where: { id: body.deliveryAddressId, buyerId: session.user.id } }),
   ]);
   if (!cook || !address) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
@@ -49,10 +50,10 @@ export async function POST(req: Request) {
     subtotalCents,
     distanceMiles,
     tipCents: body.tipCents,
-    commissionPct: Number(process.env.PLATFORM_COMMISSION_PCT ?? 11),
-    serviceFeePct: Number(process.env.BUYER_SERVICE_FEE_PCT ?? 9),
-    driverBaseCents: Number(process.env.DRIVER_BASE_PAY_CENTS ?? 400),
-    driverPerMileCents: Number(process.env.DRIVER_PER_MILE_CENTS ?? 125),
+    commissionPct: env.PLATFORM_COMMISSION_PCT,
+    serviceFeePct: env.BUYER_SERVICE_FEE_PCT,
+    driverBaseCents: env.DRIVER_BASE_PAY_CENTS,
+    driverPerMileCents: env.DRIVER_PER_MILE_CENTS,
   });
 
   // Category-aware disclosure: TCS dishes get the stronger disclosure language because
