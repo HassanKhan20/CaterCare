@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Spinner } from '@/components/ui/Spinner';
 
 type OrderItem = { id: string; dishNameSnapshot: string; quantity: number };
 type OrderDetail = {
@@ -20,6 +21,26 @@ type OrderDetail = {
   cook: { name: string | null };
 };
 
+async function presignAndUpload(file: File): Promise<string> {
+  const presignRes = await fetch('/api/uploads/presign', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      purpose: 'dropoff-confirm',
+      contentType: file.type,
+    }),
+  });
+  if (!presignRes.ok) throw new Error('Failed to get upload URL');
+  const { uploadUrl, publicUrl } = await presignRes.json();
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'content-type': file.type },
+  });
+  if (!uploadRes.ok) throw new Error('Upload failed');
+  return publicUrl as string;
+}
+
 export default function DriverJobDetailPage({
   params,
 }: {
@@ -29,91 +50,112 @@ export default function DriverJobDetailPage({
   const router = useRouter();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
-    // Use buyer's order endpoint? No — driver needs their own view.
-    // For v1, reuse the buyer endpoint logic via a server-side cookie passthrough is overkill;
-    // simpler: read directly from the orders list filtered to this driver's claimed order.
-    const res = await fetch('/api/driver/jobs');
-    if (res.ok) {
-      // Job is no longer on the open feed once claimed; fetch via direct query
-    }
-    // Fallback: hit a direct order detail (we'll use the admin-shaped endpoint via the buyer
-    // tracking page, but drivers shouldn't see buyer-only info). For v1 we use a tiny
-    // dedicated endpoint inline — or just refetch from a minimal route.
     const detailRes = await fetch(`/api/driver/orders/${id}`);
     if (detailRes.ok) setOrder((await detailRes.json()).order);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setError(null);
+  };
 
   const transition = async (to: 'PICKED_UP' | 'DELIVERED') => {
     if (!order) return;
-    setSubmitting(true);
-    // For v1: skip photo capture, use placeholder. In production, presign + upload first.
-    const photoUrl = 'https://placehold.co/600x400';
-    const res = await fetch(`/api/driver/jobs/${id}/transition`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ to, photoUrl }),
-    });
-    if (res.ok) {
-      if (to === 'DELIVERED') {
-        router.push('/driver/earnings');
-      } else {
-        await load();
-      }
-    } else {
-      const j = await res.json();
-      alert(j.error ?? 'Failed');
+    if (to === 'DELIVERED' && !photoFile) {
+      setError('Please take a photo of the delivery before confirming.');
+      return;
     }
-    setSubmitting(false);
+    setSubmitting(true);
+    setError(null);
+    try {
+      let photoUrl = 'https://placehold.co/600x400';
+      if (to === 'DELIVERED' && photoFile) {
+        photoUrl = await presignAndUpload(photoFile);
+      }
+      const res = await fetch(`/api/driver/jobs/${id}/transition`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ to, photoUrl }),
+      });
+      if (res.ok) {
+        if (to === 'DELIVERED') {
+          router.push('/driver/earnings');
+        } else {
+          setPhotoFile(null);
+          setPhotoPreview(null);
+          await load();
+        }
+      } else {
+        const j = await res.json();
+        setError(j.error ?? 'Failed to update order status.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!order) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p>Loading…</p>
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Spinner className="w-8 h-8" />
       </main>
     );
   }
 
-  const isPickedUp = order.state === 'PICKED_UP';
   const isAssigned = order.state === 'DRIVER_ASSIGNED';
+  const isPickedUp = order.state === 'PICKED_UP';
 
   return (
     <main className="min-h-screen bg-slate-50">
       <header className="border-b bg-white">
-        <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/driver/jobs" className="text-sm text-slate-600 hover:text-slate-900">
+        <div className="max-w-3xl mx-auto px-4 py-3">
+          <Link href="/driver/jobs" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
             ← Jobs
           </Link>
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
         <div>
-          <h1 className="text-3xl font-bold">Job: {order.cook.name}</h1>
-          <p className="text-slate-600">Status: {order.state}</p>
+          <h1 className="text-2xl font-bold text-slate-900">Delivery from {order.cook.name}</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {isAssigned ? 'Step 1: Pick up the order' : isPickedUp ? 'Step 2: Deliver to customer' : order.state}
+          </p>
         </div>
 
-        <Card>
-          <div className="text-lg font-bold text-brand-700 mb-2">
-            ${(order.driverPayoutCents / 100).toFixed(2)} total
+        {/* Pay summary */}
+        <Card className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-slate-500">Your earnings</p>
+            <p className="text-2xl font-bold text-brand-600">
+              ${(order.driverPayoutCents / 100).toFixed(2)}
+            </p>
           </div>
-          <p className="text-sm text-slate-600">
-            ${(order.driverBasePayCents / 100).toFixed(2)} base + $
-            {(order.driverTipCents / 100).toFixed(2)} tip
-          </p>
+          <div className="text-right text-xs text-slate-500">
+            <p>${(order.driverBasePayCents / 100).toFixed(2)} base</p>
+            <p>+ ${(order.driverTipCents / 100).toFixed(2)} tip</p>
+          </div>
         </Card>
 
-        <Card>
-          <h2 className="font-semibold mb-2">
-            {isAssigned ? '1. Pick up from' : '2. Deliver to'}
-          </h2>
-          <p className="text-sm">
+        {/* Navigation step */}
+        <Card className="space-y-2">
+          <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">
+            {isAssigned ? '① Pickup address' : '② Delivery address'}
+          </p>
+          <p className="font-semibold text-slate-900">
             {isAssigned ? order.pickupAddressLine : order.deliveryAddressLine}
           </p>
           <a
@@ -122,54 +164,108 @@ export default function DriverJobDetailPage({
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-2 text-brand-700 underline text-sm"
+            className="inline-flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-800 font-medium transition-colors"
           >
-            Open in Google Maps →
+            <span>Open in Google Maps</span>
+            <span>→</span>
           </a>
         </Card>
 
-        {order.buyerNote && (
-          <Card className="bg-amber-50 border-amber-200">
-            <p className="text-sm">
-              <strong>Buyer note:</strong> {order.buyerNote}
-            </p>
-          </Card>
-        )}
-
-        {order.containsTcsItems && (
-          <Card className="bg-blue-50 border-blue-200 text-sm">
-            <strong>TCS items in this order.</strong> Keep food in your thermal bag — do not
-            leave at door, hand to recipient.
-          </Card>
-        )}
-
-        <Card>
-          <h3 className="font-semibold mb-2">Items</h3>
-          <ul className="text-sm space-y-1">
+        {/* Items */}
+        <Card className="space-y-2">
+          <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Items</p>
+          <ul className="space-y-1">
             {order.items.map((it) => (
-              <li key={it.id}>
+              <li key={it.id} className="text-sm text-slate-700">
                 {it.quantity} × {it.dishNameSnapshot}
               </li>
             ))}
           </ul>
         </Card>
 
+        {/* Warnings */}
+        {order.buyerNote && (
+          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+            <p className="text-sm text-amber-900">
+              <strong>Buyer note:</strong> {order.buyerNote}
+            </p>
+          </div>
+        )}
+        {order.containsTcsItems && (
+          <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-900">
+            <strong>TCS items present.</strong> Keep in thermal bag — hand directly to recipient, do not leave at door.
+          </div>
+        )}
+
+        {/* Delivery photo capture */}
+        {isPickedUp && (
+          <Card className="space-y-3">
+            <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">
+              Delivery photo <span className="text-red-500">*</span>
+            </p>
+            <p className="text-sm text-slate-600">
+              Take a photo of the delivered order at the door before confirming.
+            </p>
+            {photoPreview ? (
+              <div className="space-y-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photoPreview}
+                  alt="Delivery proof"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <button
+                  onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                  className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                >
+                  Retake photo
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-32 rounded-xl border-2 border-dashed border-slate-300 hover:border-brand-400 hover:bg-brand-50 transition-all flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-brand-600"
+              >
+                <span className="text-3xl">📷</span>
+                <span className="text-sm font-medium">Tap to take or choose a photo</span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+          </Card>
+        )}
+
+        {error && (
+          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {/* Action button */}
         {isAssigned && (
           <Button
-            className="w-full"
+            className="w-full flex items-center justify-center gap-2"
             onClick={() => transition('PICKED_UP')}
             disabled={submitting}
           >
-            {submitting ? '…' : 'Confirm pickup'}
+            {submitting && <Spinner className="w-4 h-4 border-white border-t-white/40" />}
+            {submitting ? 'Confirming…' : 'Confirm pickup'}
           </Button>
         )}
         {isPickedUp && (
           <Button
-            className="w-full"
+            className="w-full flex items-center justify-center gap-2"
             onClick={() => transition('DELIVERED')}
-            disabled={submitting}
+            disabled={submitting || !photoFile}
           >
-            {submitting ? '…' : 'Confirm delivery'}
+            {submitting && <Spinner className="w-4 h-4 border-white border-t-white/40" />}
+            {submitting ? 'Uploading & confirming…' : 'Confirm delivery'}
           </Button>
         )}
       </div>

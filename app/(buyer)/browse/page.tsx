@@ -1,4 +1,6 @@
 import { CookCard } from '@/components/buyer/CookCard';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 
 type Cook = {
@@ -20,8 +22,7 @@ async function fetchCooks(lat: number, lng: number, cuisine?: string): Promise<C
   if (cuisine) url.searchParams.set('cuisine', cuisine);
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) return [];
-  const json = await res.json();
-  return json.cooks ?? [];
+  return (await res.json()).cooks ?? [];
 }
 
 export default async function BrowsePage({
@@ -38,25 +39,25 @@ export default async function BrowsePage({
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-brand-700">
-            CaterCare
-          </Link>
-          <Link href="/account" className="text-sm text-slate-600 hover:text-slate-900">
-            Account
-          </Link>
-        </div>
-      </header>
-
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-2">Cooks near you</h1>
-        <p className="text-slate-600 mb-6">{cooks.length} approved cooks within 10 miles</p>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-slate-900">Cooks near you</h1>
+          <p className="text-slate-500 mt-1 text-sm">
+            {cooks.length} approved cook{cooks.length === 1 ? '' : 's'} within 10 miles
+          </p>
+        </div>
 
         {cooks.length === 0 ? (
-          <div className="text-center py-16 text-slate-500">
-            No cooks in your area yet. Check back soon!
-          </div>
+          <EmptyState
+            icon="🍳"
+            title="No cooks in your area yet"
+            description="We're growing fast. Check back soon or invite a cook in your neighborhood."
+            action={
+              <Link href="/">
+                <Button variant="secondary">Back to home</Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {cooks.map((c) => (

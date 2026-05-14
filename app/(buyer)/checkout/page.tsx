@@ -129,13 +129,13 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
-        <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cart" className="text-sm text-slate-600 hover:text-slate-900">
+      <div className="border-b bg-white">
+        <div className="max-w-3xl mx-auto px-4 py-3">
+          <Link href="/cart" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
             ← Cart
           </Link>
         </div>
-      </header>
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <h1 className="text-3xl font-bold">Checkout</h1>
