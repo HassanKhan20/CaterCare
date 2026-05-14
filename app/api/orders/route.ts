@@ -1,0 +1,139 @@
+import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { haversineMiles } from '@/lib/geo';
+import { computeFinancials, createOrderPaymentIntent } from '@/lib/stripe';
+import { recordAcceptance } from '@/lib/tos';
+import { z } from 'zod';
+
+const Body = z.object({
+  cookId: z.string(),
+  items: z.array(z.object({ dishId: z.string(), quantity: z.number().int().min(1).max(20) })),
+  deliveryAddressId: z.string(),
+  tipCents: z.number().int().min(0).max(20000),
+  requestedDeliveryAt: z.string().datetime(),
+  buyerNote: z.string().max(500).optional(),
+  homeKitchenDisclosureAccepted: z.literal(true),
+});
+
+export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  const body = Body.parse(await req.json());
+
+  const [cook, dishes, address] = await Promise.all([
+    prisma.cookProfile.findUnique({
+      where: { userId: body.cookId },
+      include: { user: { select: { name: true, email: true } } },
+    }),
+    prisma.dish.findMany({
+      where: {
+        id: { in: body.items.map((i) => i.dishId) },
+        cookId: body.cookId,
+        isActive: true,
+      },
+    }),
+    prisma.buyerAddress.findUnique({ where: { id: body.deliveryAddressId } }),
+  ]);
+  if (!cook?.approvedAt || !cook.stripeOnboardingComplete) {
+    return NextResponse.json({ error: 'COOK_NOT_READY' }, { status: 400 });
+  }
+  if (!address) {
+    return NextResponse.json({ error: 'ADDRESS_NOT_FOUND' }, { status: 400 });
+  }
+  if (!cook.foodHandlerCertExpiresAt || cook.foodHandlerCertExpiresAt < new Date()) {
+    return NextResponse.json({ error: 'COOK_CERT_EXPIRED' }, { status: 400 });
+  }
+
+  const subtotalCents = body.items.reduce((sum, it) => {
+    const d = dishes.find((x) => x.id === it.dishId);
+    return sum + (d?.priceCents ?? 0) * it.quantity;
+  }, 0);
+  const distanceMiles = haversineMiles(
+    { lat: cook.lat!, lng: cook.lng! },
+    { lat: address.lat, lng: address.lng },
+  );
+  const f = computeFinancials({
+    subtotalCents,
+    distanceMiles,
+    tipCents: body.tipCents,
+    commissionPct: Number(process.env.PLATFORM_COMMISSION_PCT ?? 11),
+    serviceFeePct: Number(process.env.BUYER_SERVICE_FEE_PCT ?? 9),
+    driverBaseCents: Number(process.env.DRIVER_BASE_PAY_CENTS ?? 400),
+    driverPerMileCents: Number(process.env.DRIVER_PER_MILE_CENTS ?? 125),
+  });
+  const totalChargedCents =
+    f.subtotalCents + f.buyerServiceFeeCents + f.deliveryFeeCents + f.driverTipCents;
+  const cookPayoutCents = f.subtotalCents - f.cookCommissionCents;
+  const driverPayoutCents = f.driverBasePayCents + f.driverTipCents;
+  const platformRevenueCents =
+    f.cookCommissionCents + f.buyerServiceFeeCents + (f.deliveryFeeCents - f.driverBasePayCents);
+
+  // Snapshot TCS status of this order for the compliance audit trail.
+  // Reject if any TCS item is present but the cook has no approved DSHS registration —
+  // can happen if a dish flipped between cart and checkout.
+  const containsTcsItems = dishes.some((d) => d.dishCategory === 'TCS');
+  if (containsTcsItems && cook.dshsRegistrationStatus !== 'APPROVED') {
+    return NextResponse.json({ error: 'COOK_TCS_NOT_REGISTERED' }, { status: 400 });
+  }
+
+  const order = await prisma.order.create({
+    data: {
+      buyerId: session.user.id,
+      cookId: body.cookId,
+      state: 'DRAFT',
+      subtotalCents: f.subtotalCents,
+      cookCommissionCents: f.cookCommissionCents,
+      buyerServiceFeeCents: f.buyerServiceFeeCents,
+      deliveryFeeCents: f.deliveryFeeCents,
+      driverBasePayCents: f.driverBasePayCents,
+      driverTipCents: f.driverTipCents,
+      totalChargedCents,
+      cookPayoutCents,
+      driverPayoutCents,
+      platformRevenueCents,
+      pickupAddressLine: cook.addressLine ?? '',
+      pickupLat: cook.lat!,
+      pickupLng: cook.lng!,
+      deliveryAddressLine: address.line1,
+      deliveryLat: address.lat,
+      deliveryLng: address.lng,
+      distanceMiles,
+      requestedDeliveryAt: new Date(body.requestedDeliveryAt),
+      homeKitchenDisclosureAccepted: true,
+      homeKitchenDisclosureAcceptedAt: new Date(),
+      cookCertSnapshotExpiresAt: cook.foodHandlerCertExpiresAt,
+      containsTcsItems,
+      buyerNote: body.buyerNote,
+      items: {
+        create: body.items.map((it) => {
+          const d = dishes.find((x) => x.id === it.dishId)!;
+          return {
+            dishId: it.dishId,
+            dishNameSnapshot: d.name,
+            unitPriceCents: d.priceCents,
+            quantity: it.quantity,
+          };
+        }),
+      },
+    },
+  });
+
+  const pi = await createOrderPaymentIntent({
+    financials: f,
+    cookStripeAccountId: cook.stripeConnectAccountId!,
+    metadata: {
+      orderId: order.id,
+      buyerId: session.user.id,
+      cookId: body.cookId,
+    },
+  });
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { stripePaymentIntentId: pi.id },
+  });
+  await recordAcceptance({ userId: session.user.id, tosType: 'BUYER' });
+
+  return NextResponse.json({ orderId: order.id, clientSecret: pi.client_secret });
+}
