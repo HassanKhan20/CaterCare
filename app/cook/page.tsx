@@ -27,7 +27,7 @@ export default function CookDashboard() {
       <main className="min-h-screen flex items-center justify-center">
         <Card>
           <p>Loading…</p>
-          <Link href="/cook/onboarding" className="text-brand-700 underline text-sm mt-2 block">
+          <Link href="/cook/onboarding" className="text-brand-400 underline text-sm mt-2 block">
             New cook? Complete onboarding
           </Link>
         </Card>
@@ -53,10 +53,10 @@ export default function CookDashboard() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between">
-          <Link href="/" className="text-xl font-bold text-brand-700">
+          <Link href="/" className="text-xl font-bold text-brand-400">
             CaterCare
           </Link>
           <div className="flex gap-4 text-sm">
@@ -77,16 +77,16 @@ export default function CookDashboard() {
             {checks.map((c) => (
               <li key={c.label} className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <span className={c.ok ? 'text-green-600' : 'text-amber-600'}>
+                  <span className={c.ok ? 'text-emerald-400' : 'text-amber-400'}>
                     {c.ok ? '✓' : '○'}
                   </span>
                   {c.label}
                   {c.optional && !c.ok && (
-                    <span className="text-xs text-slate-500">(optional)</span>
+                    <span className="text-xs text-[var(--color-text-tertiary)]">(optional)</span>
                   )}
                 </span>
                 {c.href && (
-                  <Link href={c.href} className="text-brand-700 text-xs hover:underline">
+                  <Link href={c.href} className="text-brand-400 text-xs hover:underline">
                     {c.ok ? 'Update' : 'Complete'}
                   </Link>
                 )}
@@ -101,7 +101,7 @@ export default function CookDashboard() {
             <p className="text-2xl font-bold">
               ${(profile.annualGmvCents / 100).toLocaleString()}
             </p>
-            <p className="text-xs text-slate-500">$150,000 max under TX SB 541</p>
+            <p className="text-xs text-[var(--color-text-tertiary)]">$150,000 max under TX SB 541</p>
           </Card>
         )}
 

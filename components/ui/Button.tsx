@@ -20,8 +20,9 @@ export function Button({ variant = 'primary', size = 'md', className, ...props }
     primary:
       'bg-brand-400 hover:bg-brand-300 active:bg-brand-500 text-[#1a1715] shadow-md hover:shadow-lg',
     secondary:
-      'bg-[var(--color-surface-2)] border border-[var(--color-surface-3)] hover:bg-[var(--color-surface-3)] text-[#f5f1ec]',
-    ghost: 'hover:bg-[var(--color-surface-2)] text-[#f5f1ec]/80 hover:text-[#f5f1ec]',
+      'bg-[var(--color-surface-2)] border border-[var(--color-surface-3)] hover:bg-[var(--color-surface-3)] text-[var(--color-text-primary)]',
+    ghost:
+      'hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
     danger: 'bg-red-500 hover:bg-red-400 text-white shadow-md',
   };
   return (

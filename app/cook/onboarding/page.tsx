@@ -40,17 +40,17 @@ export default function CookOnboardingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/" className="text-xl font-bold text-brand-700">
+          <Link href="/" className="text-xl font-bold text-brand-400">
             CaterCare
           </Link>
         </div>
       </header>
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         <h1 className="text-3xl font-bold">Become a cook</h1>
-        <p className="text-slate-600">
+        <p className="text-[var(--color-text-secondary)]">
           Share your story. Buyers see this on your profile.
         </p>
 
@@ -60,7 +60,7 @@ export default function CookOnboardingPage() {
             <textarea
               value={story}
               onChange={(e) => setStory(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-slate-300"
+              className="w-full px-3 py-2 rounded-md border border-[var(--color-surface-3)]"
               rows={5}
               placeholder="I learned to cook from my grandmother in Karachi…"
             />
@@ -83,7 +83,7 @@ export default function CookOnboardingPage() {
           </div>
         </Card>
 
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-red-300">{error}</p>}
 
         <Button className="w-full" onClick={submit} disabled={submitting}>
           {submitting ? '…' : 'Continue to ID verification'}

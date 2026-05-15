@@ -32,10 +32,10 @@ export default function AdminDashboard() {
   const delta = gmvLast > 0 ? ((gmvThis - gmvLast) / gmvLast) * 100 : 0;
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between">
-          <Link href="/" className="text-xl font-bold text-brand-700">
+          <Link href="/" className="text-xl font-bold text-brand-400">
             CaterCare Admin
           </Link>
           <div className="flex gap-4 text-sm">
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
         <h1 className="text-3xl font-bold">Dashboard</h1>
 
         {(m.pendingCookApprovals > 0 || m.pendingDriverApprovals > 0 || m.pendingDshs > 0 || m.stuckOrders > 0) && (
-          <Card className="bg-amber-50 border-amber-200 space-y-2">
+          <Card className="bg-amber-500/10 border-amber-500/30 space-y-2">
             <h2 className="font-semibold">Action required</h2>
             <ul className="text-sm space-y-1">
               {m.pendingCookApprovals > 0 && (
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
               )}
               {m.stuckOrders > 0 && (
                 <li>
-                  <Link href="/admin/orders?state=READY_FOR_PICKUP" className="text-red-700 font-medium underline">
+                  <Link href="/admin/orders?state=READY_FOR_PICKUP" className="text-red-300 font-medium underline">
                     {m.stuckOrders} order{m.stuckOrders === 1 ? '' : 's'} unclaimed &gt;15min — assign a driver!
                   </Link>
                 </li>
@@ -96,15 +96,15 @@ export default function AdminDashboard() {
           <h2 className="font-semibold mb-3">Revenue</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-slate-500">GMV (this week)</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">GMV (this week)</p>
               <p className="text-2xl font-bold">${gmvThis.toLocaleString()}</p>
-              <p className={`text-xs ${delta >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+              <p className={`text-xs ${delta >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
                 {delta >= 0 ? '+' : ''}
                 {delta.toFixed(1)}% vs last week
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Platform revenue (this week)</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">Platform revenue (this week)</p>
               <p className="text-2xl font-bold">${revThis.toLocaleString()}</p>
             </div>
           </div>
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <Card>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-[var(--color-text-tertiary)]">{label}</p>
       <p className="text-3xl font-bold">{value}</p>
     </Card>
   );

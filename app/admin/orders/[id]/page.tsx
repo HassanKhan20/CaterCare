@@ -75,10 +75,10 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   if (!order) return <main className="p-8">Loading…</main>;
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/admin/orders" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/admin/orders" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Orders
           </Link>
         </div>
@@ -86,7 +86,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Order {order.id.slice(0, 8)}</h1>
-          <p className="text-slate-600">Status: {order.state}</p>
+          <p className="text-[var(--color-text-secondary)]">Status: {order.state}</p>
         </div>
 
         <Card>
@@ -105,7 +105,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             <Row label="Platform revenue" cents={order.platformRevenueCents} bold />
           </div>
           {order.containsTcsItems && (
-            <p className="text-xs text-blue-700 mt-2">Contains TCS items.</p>
+            <p className="text-xs text-blue-300 mt-2">Contains TCS items.</p>
           )}
         </Card>
 
@@ -130,7 +130,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             )}
           </div>
           {order.cancellationReason && (
-            <p className="text-xs text-slate-500 mt-2">Reason: {order.cancellationReason}</p>
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-2">Reason: {order.cancellationReason}</p>
           )}
         </Card>
       </div>
@@ -141,7 +141,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
 function Row({ label, cents, bold }: { label: string; cents: number; bold?: boolean }) {
   return (
     <div className={`flex justify-between ${bold ? 'font-bold pt-2 border-t' : ''}`}>
-      <span className="text-slate-600">{label}</span>
+      <span className="text-[var(--color-text-secondary)]">{label}</span>
       <span>${(cents / 100).toFixed(2)}</span>
     </div>
   );

@@ -23,10 +23,10 @@ export default function DriverOnboardingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/" className="text-xl font-bold text-brand-700">
+          <Link href="/" className="text-xl font-bold text-brand-400">
             CaterCare
           </Link>
         </div>
@@ -35,7 +35,7 @@ export default function DriverOnboardingPage() {
         <h1 className="text-3xl font-bold">Become a driver</h1>
         <Card className="space-y-3 text-sm">
           <h2 className="font-semibold">What you&apos;ll need</h2>
-          <ul className="list-disc list-inside space-y-1 text-slate-700">
+          <ul className="list-disc list-inside space-y-1 text-[var(--color-text-secondary)]">
             <li>Valid driver&apos;s license</li>
             <li>Personal auto insurance card</li>
             <li>Government-issued ID</li>
@@ -43,7 +43,7 @@ export default function DriverOnboardingPage() {
             <li>An insulated food delivery bag (minimum 13&quot; × 13&quot; × 10&quot;)</li>
             <li>A bank account or debit card for payouts</li>
           </ul>
-          <p className="text-xs text-slate-500 italic">
+          <p className="text-xs text-[var(--color-text-tertiary)] italic">
             By proceeding you confirm you are an independent contractor, that your personal
             auto insurance excludes commercial delivery, and that you accept full
             responsibility for maintaining valid coverage.

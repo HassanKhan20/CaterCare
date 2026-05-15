@@ -71,10 +71,10 @@ export default function AdminDriverDetailPage({ params }: { params: Promise<{ id
   if (!driver) return <main className="p-8">Loading…</main>;
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/admin/drivers" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/admin/drivers" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Drivers
           </Link>
         </div>
@@ -84,13 +84,13 @@ export default function AdminDriverDetailPage({ params }: { params: Promise<{ id
           <h1 className="text-3xl font-bold">
             {driver.user.name}
             {driver.thermalBagPhotoUrl && (
-              <span className="ml-3 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+              <span className="ml-3 text-xs bg-emerald-500/15 text-emerald-300 px-2 py-1 rounded-full">
                 ✓ Verified Bag
               </span>
             )}
           </h1>
-          <p className="text-slate-600">{driver.user.email}</p>
-          <p className="text-xs text-slate-500 mt-1">Status: {driver.user.status}</p>
+          <p className="text-[var(--color-text-secondary)]">{driver.user.email}</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Status: {driver.user.status}</p>
         </div>
 
         <Card>
@@ -130,7 +130,7 @@ export default function AdminDriverDetailPage({ params }: { params: Promise<{ id
               <Button variant="danger" onClick={reject}>Reject</Button>
             </div>
             {driver.rejectedReason && (
-              <p className="text-sm text-red-700 mt-2">Reason on file: {driver.rejectedReason}</p>
+              <p className="text-sm text-red-300 mt-2">Reason on file: {driver.rejectedReason}</p>
             )}
           </Card>
         )}
@@ -171,14 +171,14 @@ function DocRow({ label, url, extra }: { label: string; url: string | null; extr
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-brand-700 underline text-xs"
+            className="text-brand-400 underline text-xs"
           >
             View document
           </a>
         ) : (
-          <p className="text-xs text-slate-500">Not uploaded</p>
+          <p className="text-xs text-[var(--color-text-tertiary)]">Not uploaded</p>
         )}
-        {extra && <p className="text-xs text-slate-500">{extra}</p>}
+        {extra && <p className="text-xs text-[var(--color-text-tertiary)]">{extra}</p>}
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
+import { Btn } from '@/components/ui/Btn';
+import { Icon } from '@/components/ui/Icon';
+import { PriceTag } from '@/components/ui/PriceTag';
 import {
   loadCart,
   saveCart,
@@ -22,6 +24,7 @@ type Props = {
 
 export function AddToCartButton(props: Props) {
   const router = useRouter();
+  const [qty, setQty] = useState(1);
   const [confirming, setConfirming] = useState(false);
 
   const tryAdd = (force: boolean) => {
@@ -34,7 +37,7 @@ export function AddToCartButton(props: Props) {
         dishId: props.dishId,
         name: props.name,
         priceCents: props.priceCents,
-        qty: 1,
+        qty,
         photoUrl: props.photoUrl,
       };
       const updated = addToCart(cart, item);
@@ -51,25 +54,40 @@ export function AddToCartButton(props: Props) {
 
   if (confirming) {
     return (
-      <div className="rounded-2xl bg-[var(--color-surface-1)] border border-amber-500/30 p-4 space-y-3">
-        <p className="text-sm text-amber-300">
-          Your cart already has items from another cook. Replace cart?
+      <div style={{ marginTop: 'auto' }}>
+        <p className="cc-muted" style={{ marginBottom: 12, fontSize: 13 }}>
+          Your basket already has items from another cook. Replace?
         </p>
-        <div className="flex gap-2">
-          <Button variant="danger" onClick={() => tryAdd(true)} className="flex-1">
-            Replace cart
-          </Button>
-          <Button variant="secondary" onClick={() => setConfirming(false)} className="flex-1">
+        <div className="cc-dish-cta">
+          <Btn variant="secondary" full onClick={() => setConfirming(false)}>
             Cancel
-          </Button>
+          </Btn>
+          <Btn variant="primary" full onClick={() => tryAdd(true)}>
+            Replace basket
+          </Btn>
         </div>
       </div>
     );
   }
 
   return (
-    <Button size="lg" className="w-full" onClick={() => tryAdd(false)}>
-      Add to cart · ${(props.priceCents / 100).toFixed(2)}
-    </Button>
+    <div className="cc-dish-cta">
+      <div className="cc-qty">
+        <button
+          type="button"
+          onClick={() => setQty((q) => Math.max(1, q - 1))}
+          aria-label="Decrease"
+        >
+          <Icon name="minus" size={14} />
+        </button>
+        <span>{qty}</span>
+        <button type="button" onClick={() => setQty((q) => q + 1)} aria-label="Increase">
+          <Icon name="plus" size={14} />
+        </button>
+      </div>
+      <Btn variant="primary" size="lg" full onClick={() => tryAdd(false)}>
+        Add to cart · <PriceTag cents={props.priceCents * qty} />
+      </Btn>
+    </div>
   );
 }

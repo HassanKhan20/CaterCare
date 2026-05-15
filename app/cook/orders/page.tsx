@@ -38,10 +38,10 @@ export default function CookOrdersPage() {
   const visible = filter ? orders.filter((o) => filter.includes(o.state)) : orders;
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cook" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/cook" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dashboard
           </Link>
         </div>
@@ -56,8 +56,8 @@ export default function CookOrdersPage() {
               onClick={() => setFilter(f.states)}
               className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${
                 JSON.stringify(filter) === JSON.stringify(f.states)
-                  ? 'bg-brand-500 text-white'
-                  : 'bg-white border border-slate-300 text-slate-700'
+                  ? 'bg-brand-400/150 text-white'
+                  : 'bg-[var(--color-surface-1)] border border-[var(--color-surface-3)] text-[var(--color-text-secondary)]'
               }`}
             >
               {f.label}
@@ -67,7 +67,7 @@ export default function CookOrdersPage() {
 
         {visible.length === 0 ? (
           <Card>
-            <p className="text-slate-600">No orders match this filter.</p>
+            <p className="text-[var(--color-text-secondary)]">No orders match this filter.</p>
           </Card>
         ) : (
           visible.map((o) => (
@@ -76,16 +76,16 @@ export default function CookOrdersPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-medium">{o.buyer.name}</h3>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       {o.items.map((i) => `${i.quantity}× ${i.dish.name}`).join(', ')}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
                       {new Date(o.createdAt).toLocaleString()} · {o.state}
                     </p>
                   </div>
                   <div className="text-right">
                     <div className="font-bold">${(o.cookPayoutCents / 100).toFixed(2)}</div>
-                    <div className="text-xs text-slate-500">your earnings</div>
+                    <div className="text-xs text-[var(--color-text-tertiary)]">your earnings</div>
                   </div>
                 </div>
               </Card>

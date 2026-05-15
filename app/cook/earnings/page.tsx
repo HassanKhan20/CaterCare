@@ -37,16 +37,16 @@ export default function CookEarningsPage() {
   const pct = Math.min(100, (data.annualGmvCents / GMV_CAP) * 100);
   const warningColor =
     data.gmvWarning === 'admin' || data.gmvWarning === 'hard'
-      ? 'bg-red-500'
+      ? 'bg-red-500/100'
       : data.gmvWarning === 'soft'
-        ? 'bg-amber-500'
-        : 'bg-brand-500';
+        ? 'bg-amber-500/100'
+        : 'bg-brand-400/150';
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cook" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/cook" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dashboard
           </Link>
         </div>
@@ -79,22 +79,22 @@ export default function CookEarningsPage() {
               ${(data.annualGmvCents / 100).toLocaleString()} / $150,000
             </span>
           </div>
-          <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+          <div className="h-3 bg-[var(--color-surface-2)] rounded-full overflow-hidden">
             <div className={`h-full ${warningColor}`} style={{ width: `${pct}%` }} />
           </div>
           {data.gmvWarning === 'soft' && (
-            <p className="text-amber-700 text-sm mt-2">
+            <p className="text-amber-300 text-sm mt-2">
               Approaching $125K. Start thinking about a commercial permit.
             </p>
           )}
           {data.gmvWarning === 'hard' && (
-            <p className="text-red-700 text-sm mt-2">
+            <p className="text-red-300 text-sm mt-2">
               You&apos;ve crossed $145K. Listings pause at $150K until you obtain a Dallas Retail
               Food Establishment Permit.
             </p>
           )}
           {data.gmvWarning === 'admin' && (
-            <p className="text-red-700 font-medium text-sm mt-2">
+            <p className="text-red-300 font-medium text-sm mt-2">
               You&apos;re very close to the cap. Reach out to support immediately to avoid an
               outage.
             </p>
@@ -104,11 +104,11 @@ export default function CookEarningsPage() {
         <Card>
           <h2 className="font-semibold mb-3">Recent payouts</h2>
           {data.recent.length === 0 ? (
-            <p className="text-sm text-slate-600">No deliveries yet.</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">No deliveries yet.</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-500">
+                <tr className="text-left text-[var(--color-text-tertiary)]">
                   <th className="py-2">Date</th>
                   <th className="text-right">Payout</th>
                 </tr>
@@ -134,9 +134,9 @@ export default function CookEarningsPage() {
 function Stat({ label, cents, count }: { label: string; cents: number; count: number }) {
   return (
     <Card>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-[var(--color-text-tertiary)]">{label}</p>
       <p className="text-2xl font-bold">${(cents / 100).toFixed(2)}</p>
-      <p className="text-xs text-slate-500">{count} orders</p>
+      <p className="text-xs text-[var(--color-text-tertiary)]">{count} orders</p>
     </Card>
   );
 }

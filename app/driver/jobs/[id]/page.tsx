@@ -109,7 +109,7 @@ export default function DriverJobDetailPage({
 
   if (!order) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+      <main className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
         <Spinner className="w-8 h-8" />
       </main>
     );
@@ -119,10 +119,10 @@ export default function DriverJobDetailPage({
   const isPickedUp = order.state === 'PICKED_UP';
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-3">
-          <Link href="/driver/jobs" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
+          <Link href="/driver/jobs" className="text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors">
             ← Jobs
           </Link>
         </div>
@@ -130,8 +130,8 @@ export default function DriverJobDetailPage({
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Delivery from {order.cook.name}</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Delivery from {order.cook.name}</h1>
+          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
             {isAssigned ? 'Step 1: Pick up the order' : isPickedUp ? 'Step 2: Deliver to customer' : order.state}
           </p>
         </div>
@@ -139,12 +139,12 @@ export default function DriverJobDetailPage({
         {/* Pay summary */}
         <Card className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-500">Your earnings</p>
-            <p className="text-2xl font-bold text-brand-600">
+            <p className="text-xs text-[var(--color-text-tertiary)]">Your earnings</p>
+            <p className="text-2xl font-bold text-brand-400">
               ${(order.driverPayoutCents / 100).toFixed(2)}
             </p>
           </div>
-          <div className="text-right text-xs text-slate-500">
+          <div className="text-right text-xs text-[var(--color-text-tertiary)]">
             <p>${(order.driverBasePayCents / 100).toFixed(2)} base</p>
             <p>+ ${(order.driverTipCents / 100).toFixed(2)} tip</p>
           </div>
@@ -152,10 +152,10 @@ export default function DriverJobDetailPage({
 
         {/* Navigation step */}
         <Card className="space-y-2">
-          <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">
+          <p className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide font-medium">
             {isAssigned ? '① Pickup address' : '② Delivery address'}
           </p>
-          <p className="font-semibold text-slate-900">
+          <p className="font-semibold text-[var(--color-text-primary)]">
             {isAssigned ? order.pickupAddressLine : order.deliveryAddressLine}
           </p>
           <a
@@ -164,7 +164,7 @@ export default function DriverJobDetailPage({
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-800 font-medium transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-800 font-medium transition-colors"
           >
             <span>Open in Google Maps</span>
             <span>→</span>
@@ -173,10 +173,10 @@ export default function DriverJobDetailPage({
 
         {/* Items */}
         <Card className="space-y-2">
-          <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Items</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide font-medium">Items</p>
           <ul className="space-y-1">
             {order.items.map((it) => (
-              <li key={it.id} className="text-sm text-slate-700">
+              <li key={it.id} className="text-sm text-[var(--color-text-secondary)]">
                 {it.quantity} × {it.dishNameSnapshot}
               </li>
             ))}
@@ -185,14 +185,14 @@ export default function DriverJobDetailPage({
 
         {/* Warnings */}
         {order.buyerNote && (
-          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3">
             <p className="text-sm text-amber-900">
               <strong>Buyer note:</strong> {order.buyerNote}
             </p>
           </div>
         )}
         {order.containsTcsItems && (
-          <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-900">
+          <div className="rounded-xl bg-blue-500/15 border border-blue-200 px-4 py-3 text-sm text-blue-900">
             <strong>TCS items present.</strong> Keep in thermal bag — hand directly to recipient, do not leave at door.
           </div>
         )}
@@ -200,10 +200,10 @@ export default function DriverJobDetailPage({
         {/* Delivery photo capture */}
         {isPickedUp && (
           <Card className="space-y-3">
-            <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">
-              Delivery photo <span className="text-red-500">*</span>
+            <p className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide font-medium">
+              Delivery photo <span className="text-red-400">*</span>
             </p>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[var(--color-text-secondary)]">
               Take a photo of the delivered order at the door before confirming.
             </p>
             {photoPreview ? (
@@ -216,7 +216,7 @@ export default function DriverJobDetailPage({
                 />
                 <button
                   onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
-                  className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                  className="text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
                 >
                   Retake photo
                 </button>
@@ -224,7 +224,7 @@ export default function DriverJobDetailPage({
             ) : (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full h-32 rounded-xl border-2 border-dashed border-slate-300 hover:border-brand-400 hover:bg-brand-50 transition-all flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-brand-600"
+                className="w-full h-32 rounded-xl border-2 border-dashed border-[var(--color-surface-3)] hover:border-brand-400 hover:bg-brand-400/15 transition-all flex flex-col items-center justify-center gap-2 text-[var(--color-text-tertiary)] hover:text-brand-400"
               >
                 <span className="text-3xl">📷</span>
                 <span className="text-sm font-medium">Tap to take or choose a photo</span>
@@ -242,7 +242,7 @@ export default function DriverJobDetailPage({
         )}
 
         {error && (
-          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300">
             {error}
           </div>
         )}

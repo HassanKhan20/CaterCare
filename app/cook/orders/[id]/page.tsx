@@ -79,10 +79,10 @@ export default function CookOrderDetailPage({
   const nextStep = NEXT_LABEL[order.state];
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cook/orders" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/cook/orders" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Orders
           </Link>
         </div>
@@ -90,25 +90,25 @@ export default function CookOrderDetailPage({
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Order from {order.buyer.name}</h1>
-          <p className="text-slate-600">Status: {order.state}</p>
+          <p className="text-[var(--color-text-secondary)]">Status: {order.state}</p>
         </div>
 
         <Card>
-          <div className="text-2xl font-bold text-brand-700 mb-1">
+          <div className="text-2xl font-bold text-brand-400 mb-1">
             ${(order.cookPayoutCents / 100).toFixed(2)}
           </div>
-          <p className="text-xs text-slate-500">your payout after 11% commission</p>
+          <p className="text-xs text-[var(--color-text-tertiary)]">your payout after 11% commission</p>
         </Card>
 
         {order.containsTcsItems && (
-          <Card className="bg-blue-50 border-blue-200 text-sm">
+          <Card className="bg-blue-500/15 border-blue-200 text-sm">
             <strong>TCS items.</strong> Keep refrigerated until pickup. Driver will use
             insulated bag.
           </Card>
         )}
 
         {order.buyerNote && (
-          <Card className="bg-amber-50 border-amber-200 text-sm">
+          <Card className="bg-amber-500/10 border-amber-500/30 text-sm">
             <strong>Buyer note:</strong> {order.buyerNote}
           </Card>
         )}
@@ -121,7 +121,7 @@ export default function CookOrderDetailPage({
                 <span>
                   <strong>{it.quantity}×</strong> {it.dishNameSnapshot}
                 </span>
-                <span className="text-slate-500">
+                <span className="text-[var(--color-text-tertiary)]">
                   ${((it.unitPriceCents * it.quantity) / 100).toFixed(2)}
                 </span>
               </li>
@@ -132,7 +132,7 @@ export default function CookOrderDetailPage({
         <Card>
           <h2 className="font-semibold mb-2">Delivery</h2>
           <p className="text-sm">{order.deliveryAddressLine}</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
             A driver will pick up from your address once you mark this ready.
           </p>
         </Card>

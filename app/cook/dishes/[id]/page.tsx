@@ -59,10 +59,10 @@ export default function EditDishPage({
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cook/dishes" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/cook/dishes" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dishes
           </Link>
         </div>
@@ -79,7 +79,7 @@ export default function EditDishPage({
             <textarea
               value={dish.description}
               onChange={(e) => setDish({ ...dish, description: e.target.value })}
-              className="w-full px-3 py-2 rounded-md border border-slate-300"
+              className="w-full px-3 py-2 rounded-md border border-[var(--color-surface-3)]"
               rows={3}
             />
           </div>

@@ -64,17 +64,17 @@ export default function CookAvailabilityPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cook" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/cook" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dashboard
           </Link>
         </div>
       </header>
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <h1 className="text-3xl font-bold">Weekly availability</h1>
-        <p className="text-slate-600 text-sm">
+        <p className="text-[var(--color-text-secondary)] text-sm">
           Set the days and hours you accept orders. Disabled days won&apos;t show up in buyer browse.
         </p>
 
@@ -114,7 +114,7 @@ export default function CookAvailabilityPage() {
                   title="Max orders/day"
                 />
               </div>
-              <div className="col-span-2 text-xs text-slate-500">max/day</div>
+              <div className="col-span-2 text-xs text-[var(--color-text-tertiary)]">max/day</div>
             </div>
           ))}
         </Card>

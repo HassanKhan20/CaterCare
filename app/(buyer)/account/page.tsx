@@ -1,11 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Spinner } from '@/components/ui/Spinner';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { Btn } from '@/components/ui/Btn';
+import { Icon } from '@/components/ui/Icon';
 
 type Address = {
   id: string;
@@ -24,15 +21,26 @@ const US_STATES = [
   'OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
 ];
 
-function AddressSkeleton() {
-  return (
-    <div className="animate-pulse space-y-3">
-      {[0, 1].map((i) => (
-        <div key={i} className="h-20 rounded-xl bg-slate-200" />
-      ))}
-    </div>
-  );
-}
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '11px 14px',
+  fontSize: 14,
+  border: '1px solid var(--line)',
+  borderRadius: 4,
+  background: 'var(--surface)',
+  color: 'var(--ink)',
+  fontFamily: 'inherit',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontFamily: 'var(--f-mono)',
+  fontSize: 11,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: 'var(--muted)',
+  marginBottom: 6,
+};
 
 export default function AccountPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -40,7 +48,6 @@ export default function AccountPage() {
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // form fields
   const [label, setLabel] = useState('');
   const [line1, setLine1] = useState('');
   const [line2, setLine2] = useState('');
@@ -57,8 +64,9 @@ export default function AccountPage() {
     if (res.ok) setAddresses((await res.json()).addresses ?? []);
     setLoading(false);
   };
-
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const deleteAddress = async (id: string) => {
     setDeleting(id);
@@ -84,7 +92,7 @@ export default function AccountPage() {
       const fullAddress = `${line1}, ${city}, ${stateCode} ${zip}`;
       const geoRes = await fetch(`/api/geocode?q=${encodeURIComponent(fullAddress)}`);
       if (!geoRes.ok) {
-        setError('Could not find this address. Please double-check and try again.');
+        setError('Could not find this address. Please double-check.');
         return;
       }
       const { lat, lng } = await geoRes.json();
@@ -121,184 +129,179 @@ export default function AccountPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
-        {/* Page header */}
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Account</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage your delivery addresses</p>
-        </div>
+    <main className="cc-page cc-page-narrow">
+      <h1 className="cc-page-title">Account</h1>
+      <p className="cc-page-sub">Manage your delivery addresses</p>
 
-        {/* Addresses section */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-800">Saved addresses</h2>
-            {!adding && (
-              <Button size="sm" variant="secondary" onClick={() => setAdding(true)}>
-                + Add new
-              </Button>
-            )}
-          </div>
-
-          {loading ? (
-            <AddressSkeleton />
-          ) : addresses.length === 0 && !adding ? (
-            <EmptyState
-              icon="📍"
-              title="No addresses yet"
-              description="Add a delivery address to get started with checkout."
-              action={
-                <Button onClick={() => setAdding(true)}>Add your first address</Button>
-              }
-            />
-          ) : (
-            <div className="space-y-3">
-              {addresses.map((a) => (
-                <Card key={a.id} className="flex items-start justify-between gap-4 py-4 px-5">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 text-brand-500 text-lg">📍</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-900">{a.label}</p>
-                        {a.isDefault && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-brand-50 text-brand-700 rounded-full font-medium">
-                            Default
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-slate-600 mt-0.5">
-                        {a.line1}{a.line2 ? `, ${a.line2}` : ''}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        {a.city}, {a.state} {a.zip}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
-                    disabled={deleting === a.id}
-                    onClick={() => deleteAddress(a.id)}
-                  >
-                    {deleting === a.id ? <Spinner className="w-4 h-4" /> : 'Remove'}
-                  </Button>
-                </Card>
-              ))}
-            </div>
+      <div className="cc-account-grid" style={{ marginBottom: 32 }}>
+        <article className="cc-acc-card">
+          <h4>Addresses</h4>
+          <p>
+            {loading ? 'Loading…' : `${addresses.length} saved`}
+            {addresses.find((a) => a.isDefault) ? ` · ${addresses.find((a) => a.isDefault)!.label} (default)` : ''}
+          </p>
+          {!adding && (
+            <Link href="#addresses" className="cc-link-sm" onClick={() => setAdding(true)}>
+              + Add new →
+            </Link>
           )}
+        </article>
+        <article className="cc-acc-card">
+          <h4>Payment methods</h4>
+          <p>Card on file at checkout (Stripe).</p>
+          <Link href="/checkout" className="cc-link-sm">
+            Manage at checkout →
+          </Link>
+        </article>
+        <article className="cc-acc-card">
+          <h4>Dietary notes</h4>
+          <p>Add notes per order from the dish detail page.</p>
+        </article>
+        <article className="cc-acc-card">
+          <h4>Notifications</h4>
+          <p>Order updates by email.</p>
+        </article>
+      </div>
 
-          {/* Add address form */}
-          {adding && (
-            <Card className="mt-4 space-y-4">
-              <h3 className="font-semibold text-slate-900">New address</h3>
+      {/* Saved addresses list */}
+      <section id="addresses">
+        <h2
+          className="cc-section-title"
+          style={{ fontSize: 28, marginBottom: 20 }}
+        >
+          Saved addresses
+        </h2>
 
+        {loading ? (
+          <p className="cc-muted">Loading addresses…</p>
+        ) : addresses.length === 0 && !adding ? (
+          <p className="cc-muted">
+            No addresses yet.{' '}
+            <button type="button" className="cc-link-sm" onClick={() => setAdding(true)}>
+              Add your first →
+            </button>
+          </p>
+        ) : (
+          <div>
+            {addresses.map((a) => (
+              <article key={a.id} className="cc-order" style={{ paddingTop: 20, paddingBottom: 20 }}>
+                <div>
+                  <div className="cc-mono cc-muted" style={{ marginBottom: 6 }}>
+                    <Icon name="pin" size={11} /> {a.label}
+                    {a.isDefault ? ' · DEFAULT' : ''}
+                  </div>
+                  <h4 style={{ fontSize: 18, fontWeight: 600, margin: '4px 0' }}>
+                    {a.line1}
+                    {a.line2 ? `, ${a.line2}` : ''}
+                  </h4>
+                  <span className="cc-muted" style={{ fontSize: 13 }}>
+                    {a.city}, {a.state} {a.zip}
+                  </span>
+                </div>
+                <div className="cc-order-right">
+                  <button
+                    type="button"
+                    className="cc-link-sm"
+                    onClick={() => deleteAddress(a.id)}
+                    disabled={deleting === a.id}
+                    style={{ color: 'var(--danger)' }}
+                  >
+                    {deleting === a.id ? 'Removing…' : 'Remove'}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {/* Add address form */}
+        {adding ? (
+          <div
+            style={{
+              marginTop: 24,
+              padding: 28,
+              border: '1px solid var(--line)',
+              background: 'var(--surface)',
+              borderRadius: 4,
+            }}
+          >
+            <h3 style={{ fontFamily: 'var(--f-display)', fontSize: 22, fontWeight: 600, marginTop: 0 }}>
+              New address
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Label <span className="text-slate-400 font-normal">(e.g. Home, Work)</span>
-                </label>
-                <Input
-                  placeholder="Home"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                />
+                <label style={labelStyle}>Label (e.g. Home, Work)</label>
+                <input style={inputStyle} placeholder="Home" value={label} onChange={(e) => setLabel(e.target.value)} />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Street address
-                </label>
-                <Input
-                  placeholder="123 Main St"
-                  value={line1}
-                  onChange={(e) => setLine1(e.target.value)}
-                />
+                <label style={labelStyle}>Street address</label>
+                <input style={inputStyle} placeholder="123 Main St" value={line1} onChange={(e) => setLine1(e.target.value)} />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Apt / Suite <span className="text-slate-400 font-normal">(optional)</span>
-                </label>
-                <Input
-                  placeholder="Apt 4B"
-                  value={line2}
-                  onChange={(e) => setLine2(e.target.value)}
-                />
+                <label style={labelStyle}>Apt / Suite (optional)</label>
+                <input style={inputStyle} placeholder="Apt 4B" value={line2} onChange={(e) => setLine2(e.target.value)} />
               </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-                  <Input
-                    placeholder="Austin"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>City</label>
+                  <input style={inputStyle} placeholder="Plano" value={city} onChange={(e) => setCity(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
-                  <select
-                    value={stateCode}
-                    onChange={(e) => setStateCode(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
+                  <label style={labelStyle}>State</label>
+                  <select style={inputStyle} value={stateCode} onChange={(e) => setStateCode(e.target.value)}>
                     {US_STATES.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">ZIP</label>
-                  <Input
-                    placeholder="78701"
-                    value={zip}
-                    onChange={(e) => setZip(e.target.value)}
-                    maxLength={10}
-                  />
+                  <label style={labelStyle}>ZIP</label>
+                  <input style={inputStyle} placeholder="75024" value={zip} onChange={(e) => setZip(e.target.value)} maxLength={10} />
                 </div>
               </div>
-
-              <label className="flex items-center gap-2 cursor-pointer select-none">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--ink-2)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={isDefault}
                   onChange={(e) => setIsDefault(e.target.checked)}
-                  className="w-4 h-4 accent-brand-500"
+                  style={{ accentColor: 'var(--accent)' }}
                 />
-                <span className="text-sm text-slate-700">Set as default delivery address</span>
+                Set as default delivery address
               </label>
-
               {error && (
-                <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--danger)',
+                    padding: '10px 14px',
+                    background: 'color-mix(in oklab, var(--danger) 8%, transparent)',
+                    border: '1px solid color-mix(in oklab, var(--danger) 30%, transparent)',
+                    borderRadius: 4,
+                    margin: 0,
+                  }}
+                >
                   {error}
                 </p>
               )}
-
-              <div className="flex gap-2 pt-1">
-                <Button onClick={saveAddress} disabled={submitting} className="flex items-center gap-2">
-                  {submitting && <Spinner className="w-4 h-4 border-white border-t-white/40" />}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <Btn variant="primary" onClick={saveAddress} disabled={submitting}>
                   {submitting ? 'Saving…' : 'Save address'}
-                </Button>
-                <Button variant="ghost" onClick={resetForm}>
+                </Btn>
+                <Btn variant="ghost" onClick={resetForm}>
                   Cancel
-                </Button>
+                </Btn>
               </div>
-            </Card>
-          )}
-        </section>
-
-        {/* Quick links */}
-        <section className="pt-2 border-t border-slate-200">
-          <div className="flex gap-6 text-sm text-slate-500">
-            <Link href="/browse" className="hover:text-slate-900 transition-colors">
-              Browse cooks
-            </Link>
-            <Link href="/orders" className="hover:text-slate-900 transition-colors">
-              My orders
-            </Link>
+            </div>
           </div>
-        </section>
-      </div>
+        ) : (
+          <div style={{ marginTop: 24 }}>
+            <Btn variant="secondary" onClick={() => setAdding(true)}>
+              + Add new address
+            </Btn>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

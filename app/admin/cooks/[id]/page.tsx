@@ -82,10 +82,10 @@ export default function AdminCookDetailPage({ params }: { params: Promise<{ id: 
   if (!cook) return <main className="p-8">Loading…</main>;
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/admin/cooks" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/admin/cooks" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Cooks
           </Link>
         </div>
@@ -93,18 +93,18 @@ export default function AdminCookDetailPage({ params }: { params: Promise<{ id: 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div>
           <h1 className="text-3xl font-bold">{cook.user.name}</h1>
-          <p className="text-slate-600">{cook.user.email}</p>
-          <p className="text-xs text-slate-500 mt-1">Status: {cook.user.status}</p>
+          <p className="text-[var(--color-text-secondary)]">{cook.user.email}</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Status: {cook.user.status}</p>
         </div>
 
         <Card>
           <h2 className="font-semibold mb-2">Profile</h2>
           <p className="text-sm">{cook.story}</p>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
             {cook.neighborhood} · {cook.cuisineTags.join(', ')}
           </p>
           {cook.approvedAt && (
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
               Annual GMV: ${(cook.annualGmvCents / 100).toLocaleString()}
             </p>
           )}
@@ -140,15 +140,15 @@ export default function AdminCookDetailPage({ params }: { params: Promise<{ id: 
               <Button variant="danger" onClick={rejectCook}>Reject</Button>
             </div>
             {cook.rejectedReason && (
-              <p className="text-sm text-red-700 mt-2">Reason on file: {cook.rejectedReason}</p>
+              <p className="text-sm text-red-300 mt-2">Reason on file: {cook.rejectedReason}</p>
             )}
           </Card>
         )}
 
         {cook.dshsRegistrationStatus === 'PENDING' && (
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-blue-500/15 border-blue-200">
             <h2 className="font-semibold mb-2">DSHS registration review</h2>
-            <p className="text-xs text-slate-600 mb-2">
+            <p className="text-xs text-[var(--color-text-secondary)] mb-2">
               Approving will auto-activate any TCS dishes this cook has pending.
             </p>
             <div className="flex gap-2">
@@ -189,23 +189,23 @@ function DocRow({
       <div>
         <p className="font-medium">{label}</p>
         {url ? (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="text-brand-700 underline text-xs">
+          <a href={url} target="_blank" rel="noopener noreferrer" className="text-brand-400 underline text-xs">
             View document
           </a>
         ) : (
-          <p className="text-xs text-slate-500">Not uploaded</p>
+          <p className="text-xs text-[var(--color-text-tertiary)]">Not uploaded</p>
         )}
-        {extra && <p className="text-xs text-slate-500">{extra}</p>}
+        {extra && <p className="text-xs text-[var(--color-text-tertiary)]">{extra}</p>}
       </div>
       <span
         className={`text-xs px-2 py-1 rounded ${
           status === 'APPROVED'
-            ? 'bg-green-100 text-green-700'
+            ? 'bg-emerald-500/15 text-emerald-300'
             : status === 'PENDING'
-              ? 'bg-amber-100 text-amber-700'
+              ? 'bg-amber-500/15 text-amber-300'
               : status === 'REJECTED'
-                ? 'bg-red-100 text-red-700'
-                : 'bg-slate-100 text-slate-500'
+                ? 'bg-red-500/15 text-red-300'
+                : 'bg-[var(--color-surface-2)] text-[var(--color-text-tertiary)]'
         }`}
       >
         {status}

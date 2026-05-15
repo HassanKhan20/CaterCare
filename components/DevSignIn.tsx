@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { Button } from '@/components/ui/Button';
+import { Btn } from '@/components/ui/Btn';
 
 const SEEDED_USERS = [
   { email: 'admin@catercare.test', label: 'Admin', dest: '/admin' },
@@ -30,24 +30,34 @@ export function DevSignIn() {
   };
 
   return (
-    <div className="pt-5 border-t border-dashed border-[var(--color-surface-3)]">
-      <p className="text-xs font-semibold text-[#f5f1ec]/40 uppercase tracking-wider mb-1">
+    <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px dashed var(--line)' }}>
+      <p
+        className="cc-mono"
+        style={{
+          fontSize: 10.5,
+          letterSpacing: '0.07em',
+          textTransform: 'uppercase',
+          color: 'var(--muted)',
+          margin: '0 0 4px',
+        }}
+      >
         Dev shortcuts
       </p>
-      <p className="text-xs text-[#f5f1ec]/40 mb-3">
+      <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 16px' }}>
         Skip OAuth in local dev. Disabled in production.
       </p>
-      <div className="space-y-2">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {SEEDED_USERS.map((u) => (
-          <Button
+          <Btn
             key={u.email}
             variant="secondary"
-            className="w-full text-left text-sm"
+            size="sm"
+            full
             onClick={() => signInAs(u.email, u.dest)}
             disabled={submitting !== null}
           >
             {submitting === u.email ? '…' : `Sign in as ${u.label}`}
-          </Button>
+          </Btn>
         ))}
       </div>
     </div>

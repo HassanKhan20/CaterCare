@@ -2,9 +2,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
+import { Btn } from '@/components/ui/Btn';
+import { Icon } from '@/components/ui/Icon';
+import { PriceTag } from '@/components/ui/PriceTag';
 import { loadCart, type Cart } from '@/lib/cart';
 
 type Address = {
@@ -32,7 +32,36 @@ type Quote = {
   disclosureText: string;
 };
 
-const TIP_PRESETS = [0, 10, 15, 20] as const;
+type TimeOption = { id: string; t: string; note: string; iso: string };
+
+function buildTimeOptions(): TimeOption[] {
+  const now = new Date();
+  const todayEvening = new Date(now);
+  todayEvening.setHours(18, 30, 0, 0);
+  const todayLater = new Date(now);
+  todayLater.setHours(19, 30, 0, 0);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(12, 30, 0, 0);
+  // If today's slots are in the past, push them all to tomorrow + 1 day
+  if (todayEvening < now) {
+    todayEvening.setDate(todayEvening.getDate() + 1);
+    todayLater.setDate(todayLater.getDate() + 1);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+  }
+  const fmt = (d: Date) =>
+    d.toLocaleString('en-US', {
+      weekday: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  return [
+    { id: 'a', t: fmt(todayEvening), note: 'fastest', iso: todayEvening.toISOString() },
+    { id: 'b', t: fmt(todayLater), note: 'evening', iso: todayLater.toISOString() },
+    { id: 'c', t: fmt(tomorrow), note: 'lunch', iso: tomorrow.toISOString() },
+  ];
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -40,11 +69,11 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [tipPct, setTipPct] = useState<number>(15);
-  const [requestedTime, setRequestedTime] = useState<string>('');
-  const [note, setNote] = useState<string>('');
-  const [disclosureAck, setDisclosureAck] = useState<boolean>(false);
+  const [timeOpts] = useState<TimeOption[]>(() => buildTimeOptions());
+  const [timeId, setTimeId] = useState<string>('a');
+  const [accepted, setAccepted] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
-  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,12 +81,10 @@ export default function CheckoutPage() {
     fetch('/api/buyer/addresses')
       .then((r) => r.json())
       .then((j) => {
-        setAddresses(j.addresses ?? []);
-        const def = (j.addresses ?? []).find((a: Address & { isDefault?: boolean }) => a)?.id;
-        if (def) setSelectedAddressId(def);
+        const list: Address[] = j.addresses ?? [];
+        setAddresses(list);
+        if (list[0]) setSelectedAddressId(list[0].id);
       });
-    const inOneHour = new Date(Date.now() + 4 * 3600_000);
-    setRequestedTime(inOneHour.toISOString().slice(0, 16));
   }, []);
 
   const subtotalCents = cart?.items.reduce((s, i) => s + i.priceCents * i.qty, 0) ?? 0;
@@ -83,7 +110,8 @@ export default function CheckoutPage() {
   }, [fetchQuote]);
 
   const placeOrder = async () => {
-    if (!cart?.cookId || !selectedAddressId || !disclosureAck) return;
+    if (!cart?.cookId || !selectedAddressId || !accepted) return;
+    const selected = timeOpts.find((t) => t.id === timeId)!;
     setSubmitting(true);
     setError(null);
     try {
@@ -95,8 +123,7 @@ export default function CheckoutPage() {
           items: cart.items.map((i) => ({ dishId: i.dishId, quantity: i.qty })),
           deliveryAddressId: selectedAddressId,
           tipCents,
-          requestedDeliveryAt: new Date(requestedTime).toISOString(),
-          buyerNote: note || undefined,
+          requestedDeliveryAt: selected.iso,
           homeKitchenDisclosureAccepted: true,
         }),
       });
@@ -105,8 +132,6 @@ export default function CheckoutPage() {
         setError(json.error ?? 'Failed to create order');
         return;
       }
-      // In production: redirect to Stripe Elements for payment confirmation.
-      // For v1 demo, jump straight to success page.
       localStorage.removeItem('catercare:cart');
       router.push(`/checkout/success/${json.orderId}`);
     } finally {
@@ -116,148 +141,176 @@ export default function CheckoutPage() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Card className="max-w-md text-center">
-          <p>Your cart is empty.</p>
-          <Link href="/browse">
-            <Button className="mt-4">Browse cooks</Button>
-          </Link>
-        </Card>
+      <main className="cc-page cc-page-narrow">
+        <p className="cc-page-sub">Your basket is empty.</p>
+        <Link href="/browse">
+          <Btn variant="primary">Browse cooks</Btn>
+        </Link>
       </main>
     );
   }
 
+  const totals = quote
+    ? {
+        subtotal: quote.financials.subtotalCents,
+        serviceFee: quote.financials.buyerServiceFeeCents,
+        delivery: quote.financials.deliveryFeeCents,
+        tip: quote.financials.driverTipCents,
+      }
+    : { subtotal: subtotalCents, serviceFee: 0, delivery: 0, tip: tipCents };
+  const total = totals.subtotal + totals.serviceFee + totals.delivery + totals.tip;
+  const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
+
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="border-b bg-white">
-        <div className="max-w-3xl mx-auto px-4 py-3">
-          <Link href="/cart" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
-            ← Cart
-          </Link>
+    <main className="cc-page cc-page-narrow">
+      <Link href="/cart" className="cc-back">
+        <Icon name="arrow-left" size={14} /> Basket
+      </Link>
+
+      <header style={{ paddingTop: 16, paddingBottom: 24 }}>
+        <span className="cc-eye">Final step</span>
+        <h1 className="cc-page-title" style={{ marginTop: 8 }}>
+          Confirm your order
+        </h1>
+      </header>
+
+      <div className="cc-co-grid" style={{ padding: 0 }}>
+        <div className="cc-co-section">
+          <h4>Deliver to</h4>
+          {addresses.length === 0 ? (
+            <div className="cc-co-row">
+              <Icon name="pin" size={15} />
+              <span>
+                No address on file.{' '}
+                <Link href="/account" className="cc-link-sm">
+                  Add one →
+                </Link>
+              </span>
+            </div>
+          ) : (
+            <div className="cc-co-row">
+              <Icon name="pin" size={15} />
+              <select
+                value={selectedAddressId}
+                onChange={(e) => setSelectedAddressId(e.target.value)}
+                style={{
+                  flex: 1,
+                  border: 0,
+                  background: 'transparent',
+                  fontSize: 14,
+                  color: 'var(--ink-2)',
+                  cursor: 'pointer',
+                }}
+              >
+                {addresses.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label} — {a.line1}, {a.city}
+                  </option>
+                ))}
+              </select>
+              <Link href="/account" className="cc-link-sm">
+                Change
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div className="cc-co-section">
+          <h4>When</h4>
+          <div className="cc-co-times">
+            {timeOpts.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setTimeId(o.id)}
+                className={`cc-co-time ${timeId === o.id ? 'is-on' : ''}`}
+              >
+                <span className="cc-co-time-t">{o.t}</span>
+                <span className="cc-co-time-n">{o.note}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="cc-co-section">
+          <h4>Driver tip</h4>
+          <div className="cc-co-times">
+            {[10, 15, 20].map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setTipPct(p)}
+                className={`cc-co-time ${tipPct === p ? 'is-on' : ''}`}
+              >
+                <span className="cc-co-time-t">{p}%</span>
+                <span className="cc-co-time-n">100% to driver</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <h1 className="text-3xl font-bold">Checkout</h1>
+      <div className="cc-co-totals" style={{ margin: '24px -32px 0' }}>
+        <TotalLine label="Subtotal" value={totals.subtotal} />
+        <TotalLine label="Service fee" value={totals.serviceFee} sub="9% — vs. ~30% on apps" />
+        <TotalLine label="Delivery" value={totals.delivery} />
+        <TotalLine label="Driver tip" value={totals.tip} />
+        <div className="cc-total-divider" />
+        <TotalLine label="Total" value={total} large />
+      </div>
 
-        <Card className="space-y-3">
-          <h2 className="font-semibold">Delivery address</h2>
-          {addresses.length === 0 ? (
-            <p className="text-sm text-slate-600">
-              Add an address in your <Link href="/account" className="text-brand-700 underline">account</Link>.
-            </p>
-          ) : (
-            <select
-              value={selectedAddressId}
-              onChange={(e) => setSelectedAddressId(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-slate-300"
-            >
-              {addresses.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.label} — {a.line1}, {a.city}
-                </option>
-              ))}
-            </select>
-          )}
-        </Card>
+      <label className="cc-disclosure-box" style={{ paddingLeft: 0, paddingRight: 0 }}>
+        <input
+          type="checkbox"
+          checked={accepted}
+          onChange={(e) => setAccepted(e.target.checked)}
+        />
+        <span>
+          <strong>Home-kitchen disclosure.</strong>{' '}
+          {quote?.disclosureText ??
+            'I understand this food is prepared in a private home licensed under Texas SB 541 — not in a commercial restaurant kitchen.'}
+        </span>
+      </label>
 
-        <Card className="space-y-3">
-          <h2 className="font-semibold">Delivery time</h2>
-          <Input
-            type="datetime-local"
-            value={requestedTime}
-            onChange={(e) => setRequestedTime(e.target.value)}
-          />
-        </Card>
+      {error && (
+        <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 12 }}>{error}</p>
+      )}
 
-        <Card className="space-y-3">
-          <h2 className="font-semibold">Tip your driver</h2>
-          <div className="flex gap-2">
-            {TIP_PRESETS.map((p) => (
-              <Button
-                key={p}
-                variant={tipPct === p ? 'primary' : 'secondary'}
-                onClick={() => setTipPct(p)}
-              >
-                {p}%
-              </Button>
-            ))}
-          </div>
-          <p className="text-xs text-slate-500">100% goes to your driver.</p>
-        </Card>
-
-        <Card className="space-y-3">
-          <h2 className="font-semibold">Note for cook (optional)</h2>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="No cilantro, extra spicy, etc."
-            className="w-full px-3 py-2 rounded-md border border-slate-300"
-            rows={2}
-          />
-        </Card>
-
-        {quote && (
-          <Card className="space-y-2">
-            <h2 className="font-semibold">Order summary</h2>
-            <Row label="Subtotal" cents={quote.financials.subtotalCents} />
-            <Row label="Service fee" cents={quote.financials.buyerServiceFeeCents} />
-            <Row label="Delivery" cents={quote.financials.deliveryFeeCents} />
-            <Row label="Driver tip" cents={quote.financials.driverTipCents} />
-            <div className="pt-2 border-t flex justify-between font-bold">
-              <span>Total</span>
-              <span>
-                $
-                {(
-                  (quote.financials.subtotalCents +
-                    quote.financials.buyerServiceFeeCents +
-                    quote.financials.deliveryFeeCents +
-                    quote.financials.driverTipCents) /
-                  100
-                ).toFixed(2)}
-              </span>
-            </div>
-          </Card>
-        )}
-
-        {quote && (
-          <Card className="bg-amber-50 border-amber-200">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={disclosureAck}
-                onChange={(e) => setDisclosureAck(e.target.checked)}
-                className="mt-1"
-              />
-              <span className="text-sm">
-                <strong className="block mb-1">I acknowledge:</strong>
-                {quote.disclosureText}
-              </span>
-            </label>
-          </Card>
-        )}
-
-        {error && (
-          <Card className="bg-red-50 border-red-200 text-red-700 text-sm">{error}</Card>
-        )}
-
-        <Button
-          className="w-full"
-          disabled={!quote || !disclosureAck || !selectedAddressId || submitting}
+      <div style={{ marginTop: 24 }}>
+        <Btn
+          variant="primary"
+          size="lg"
+          full
+          iconAfter="arrow-right"
+          disabled={!accepted || !selectedAddress || submitting}
           onClick={placeOrder}
         >
-          {submitting ? 'Placing order…' : 'Place order'}
-        </Button>
+          {submitting ? 'Placing order…' : 'Place order · '}
+          <PriceTag cents={total} />
+        </Btn>
       </div>
     </main>
   );
 }
 
-function Row({ label, cents }: { label: string; cents: number }) {
+function TotalLine({
+  label,
+  value,
+  sub,
+  large,
+}: {
+  label: string;
+  value: number;
+  sub?: string;
+  large?: boolean;
+}) {
   return (
-    <div className="flex justify-between text-sm">
-      <span className="text-slate-600">{label}</span>
-      <span>${(cents / 100).toFixed(2)}</span>
+    <div className={`cc-total-line ${large ? 'is-large' : ''}`}>
+      <div className="cc-total-label">
+        {label}
+        {sub && <span className="cc-total-sub">{sub}</span>}
+      </div>
+      <div className="cc-total-val cc-mono">${(value / 100).toFixed(2)}</div>
     </div>
   );
 }

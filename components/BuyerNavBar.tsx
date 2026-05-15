@@ -2,9 +2,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Icon } from '@/components/ui/Icon';
 import { loadCart } from '@/lib/cart';
 
-export function BuyerNavBar() {
+export function BuyerNavBar({ location = 'Plano, TX' }: { location?: string }) {
   const pathname = usePathname();
   const [cartCount, setCartCount] = useState(0);
 
@@ -22,41 +23,61 @@ export function BuyerNavBar() {
     };
   }, []);
 
-  const active = (prefix: string) =>
-    pathname === prefix || pathname.startsWith(prefix + '/')
-      ? 'text-brand-400 font-semibold'
-      : 'text-[#f5f1ec]/60 hover:text-[#f5f1ec]';
+  const isOn = (prefix: string) =>
+    pathname === prefix || pathname.startsWith(prefix + '/');
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[var(--color-surface-3)] bg-[var(--color-surface-0)]/90 backdrop-blur-md">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link
-          href="/browse"
-          className="text-xl font-bold tracking-tight hover:text-brand-400 transition-colors"
-        >
-          CaterCare
+    <header className="cc-nav">
+      <div className="cc-nav-inner">
+        <Link href="/browse" className="cc-logo">
+          <span className="cc-logo-mark">
+            <svg viewBox="0 0 32 32" width="22" height="22">
+              <circle
+                cx="16"
+                cy="16"
+                r="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+              />
+              <path
+                d="M9 16c2-3 5-3 7 0s5 3 7 0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <span className="cc-logo-text">catercare</span>
         </Link>
 
-        <div className="flex items-center gap-6">
-          <Link href="/browse" className={`text-sm transition-colors ${active('/browse')}`}>
+        <button type="button" className="cc-loc" aria-label="Change delivery location">
+          <Icon name="pin" size={15} />
+          <span className="cc-loc-label">Deliver to</span>
+          <span className="cc-loc-place">{location}</span>
+          <span className="cc-loc-caret">▾</span>
+        </button>
+
+        <div className="cc-nav-spacer" />
+
+        <nav className="cc-nav-links">
+          <Link href="/browse" className={isOn('/browse') ? 'is-on' : undefined}>
             Browse
           </Link>
-          <Link href="/orders" className={`text-sm transition-colors ${active('/orders')}`}>
+          <Link href="/orders" className={isOn('/orders') ? 'is-on' : undefined}>
             Orders
           </Link>
-          <Link href="/account" className={`text-sm transition-colors ${active('/account')}`}>
+          <Link href="/account" className={isOn('/account') ? 'is-on' : undefined}>
             Account
           </Link>
-          <Link href="/cart" className={`relative text-sm transition-colors ${active('/cart')}`}>
-            Cart
-            {cartCount > 0 && (
-              <span className="absolute -top-2.5 -right-3.5 min-w-[1.1rem] h-[1.1rem] px-0.5 flex items-center justify-center bg-brand-400 text-[#1a1715] text-[10px] font-bold rounded-full">
-                {cartCount > 9 ? '9+' : cartCount}
-              </span>
-            )}
-          </Link>
-        </div>
+        </nav>
+
+        <Link href="/cart" className="cc-bag-btn" aria-label="Cart">
+          <Icon name="bag" size={18} />
+          {cartCount > 0 && <span className="cc-bag-count">{cartCount}</span>}
+        </Link>
       </div>
-    </nav>
+    </header>
   );
 }

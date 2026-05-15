@@ -23,10 +23,10 @@ export default function CookPayoutsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cook" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/cook" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dashboard
           </Link>
         </div>
@@ -36,8 +36,8 @@ export default function CookPayoutsPage() {
         <Card>
           {profile?.stripeOnboardingComplete ? (
             <>
-              <p className="text-green-700 font-medium">✓ Your payout account is linked.</p>
-              <p className="text-sm text-slate-600 mt-2">
+              <p className="text-emerald-300 font-medium">✓ Your payout account is linked.</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-2">
                 After each delivered order, your portion transfers directly to your bank.
               </p>
               <Button variant="secondary" className="mt-3" onClick={startOnboarding} disabled={submitting}>

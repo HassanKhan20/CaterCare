@@ -34,10 +34,10 @@ export default function CookDishesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between">
-          <Link href="/cook" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/cook" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dashboard
           </Link>
           <Link href="/cook/dishes/new">
@@ -52,7 +52,7 @@ export default function CookDishesPage() {
           <p>Loading…</p>
         ) : dishes.length === 0 ? (
           <Card>
-            <p className="text-slate-600">No dishes yet. Add your first one.</p>
+            <p className="text-[var(--color-text-secondary)]">No dishes yet. Add your first one.</p>
           </Card>
         ) : (
           dishes.map((d) => (
@@ -66,13 +66,13 @@ export default function CookDishesPage() {
                   <h3 className="font-bold">{d.name}</h3>
                   <span className="font-bold">${(d.priceCents / 100).toFixed(2)}</span>
                 </div>
-                <p className="text-sm text-slate-600 line-clamp-2">{d.description}</p>
+                <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">{d.description}</p>
                 <div className="flex gap-2 mt-1 text-xs">
-                  <span className={d.isActive ? 'text-green-700' : 'text-slate-500'}>
+                  <span className={d.isActive ? 'text-emerald-300' : 'text-[var(--color-text-tertiary)]'}>
                     {d.isActive ? 'Active' : 'Inactive'}
                   </span>
-                  <span className="text-slate-500">·</span>
-                  <span className="text-slate-500">{d.dishCategory}</span>
+                  <span className="text-[var(--color-text-tertiary)]">·</span>
+                  <span className="text-[var(--color-text-tertiary)]">{d.dishCategory}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-1">

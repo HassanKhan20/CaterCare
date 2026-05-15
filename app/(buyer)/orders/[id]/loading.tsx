@@ -1,35 +1,37 @@
 export default function OrderDetailLoading() {
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 animate-pulse">
-        <div className="space-y-2">
-          <div className="h-8 w-64 bg-slate-200 rounded-lg" />
-          <div className="h-5 w-28 bg-slate-200 rounded-full" />
-        </div>
-        {/* Timeline skeleton */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
-          <div className="h-4 w-20 bg-slate-200 rounded" />
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <div className="w-3 h-3 rounded-full bg-slate-200 mt-1 shrink-0" />
-              <div className="space-y-1 flex-1">
-                <div className="h-4 w-40 bg-slate-200 rounded" />
-                <div className="h-3 w-24 bg-slate-200 rounded" />
-              </div>
+    <main className="cc-page cc-page-narrow">
+      <Skel width={120} height={14} />
+      <div style={{ marginTop: 24 }}>
+        <Skel width="60%" height={56} />
+      </div>
+      <div style={{ marginTop: 32 }}>
+        <Skel width={220} height={36} />
+      </div>
+      <div style={{ marginTop: 32 }}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} style={{ marginBottom: 24 }}>
+            <Skel width={180} height={14} />
+            <div style={{ marginTop: 8 }}>
+              <Skel width={110} height={11} />
             </div>
-          ))}
-        </div>
-        {/* Items skeleton */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-3">
-          <div className="h-4 w-16 bg-slate-200 rounded" />
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="flex justify-between">
-              <div className="h-4 w-40 bg-slate-200 rounded" />
-              <div className="h-4 w-16 bg-slate-200 rounded" />
-            </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </main>
+  );
+}
+
+function Skel({ width, height }: { width?: number | string; height?: number | string }) {
+  return (
+    <div
+      style={{
+        width: width ?? '100%',
+        height,
+        background: 'var(--bg-soft)',
+        borderRadius: 4,
+        animation: 'cc-pulse 1.6s ease-in-out infinite',
+      }}
+    />
   );
 }

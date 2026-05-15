@@ -28,10 +28,10 @@ export default function AdminCooksPage() {
   }, [filter]);
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <Link href="/admin" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/admin" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Admin dashboard
           </Link>
         </div>
@@ -44,7 +44,7 @@ export default function AdminCooksPage() {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded-full text-sm capitalize ${
-                filter === f ? 'bg-brand-500 text-white' : 'bg-white border border-slate-300'
+                filter === f ? 'bg-brand-400/150 text-white' : 'bg-[var(--color-surface-1)] border border-[var(--color-surface-3)]'
               }`}
             >
               {f}
@@ -52,7 +52,7 @@ export default function AdminCooksPage() {
           ))}
         </div>
         {cooks.length === 0 ? (
-          <Card><p className="text-slate-600">No cooks match this filter.</p></Card>
+          <Card><p className="text-[var(--color-text-secondary)]">No cooks match this filter.</p></Card>
         ) : (
           cooks.map((c) => (
             <Link key={c.userId} href={`/admin/cooks/${c.userId}`}>
@@ -60,8 +60,8 @@ export default function AdminCooksPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold">{c.user.name}</h3>
-                    <p className="text-sm text-slate-600">{c.user.email}</p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-sm text-[var(--color-text-secondary)]">{c.user.email}</p>
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
                       {c.neighborhood} · {c.cuisineTags.join(', ')}
                     </p>
                   </div>
@@ -69,7 +69,7 @@ export default function AdminCooksPage() {
                     <StatusBadge label="ID" status={c.idStatus} />
                     <StatusBadge label="Cert" status={c.foodHandlerCertStatus} />
                     <StatusBadge label="DSHS" status={c.dshsRegistrationStatus} />
-                    {c.approvedAt && <span className="text-green-700 block">✓ Approved</span>}
+                    {c.approvedAt && <span className="text-emerald-300 block">✓ Approved</span>}
                   </div>
                 </div>
               </Card>
@@ -84,12 +84,12 @@ export default function AdminCooksPage() {
 function StatusBadge({ label, status }: { label: string; status: string }) {
   const color =
     status === 'APPROVED'
-      ? 'text-green-700'
+      ? 'text-emerald-300'
       : status === 'PENDING'
-        ? 'text-amber-700'
+        ? 'text-amber-300'
         : status === 'REJECTED'
-          ? 'text-red-700'
-          : 'text-slate-400';
+          ? 'text-red-300'
+          : 'text-[var(--color-text-tertiary)]';
   return (
     <div className={color}>
       {label}: {status}

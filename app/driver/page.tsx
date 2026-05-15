@@ -68,7 +68,7 @@ export default function DriverDashboard() {
       <main className="min-h-screen flex items-center justify-center">
         <Card>
           <p>Loading…</p>
-          <Link href="/driver/onboarding" className="text-brand-700 underline text-sm mt-2 block">
+          <Link href="/driver/onboarding" className="text-brand-400 underline text-sm mt-2 block">
             New driver? Complete onboarding
           </Link>
         </Card>
@@ -93,10 +93,10 @@ export default function DriverDashboard() {
   const eligible = allChecks.every((c) => c.ok);
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between">
-          <Link href="/" className="text-xl font-bold text-brand-700">
+          <Link href="/" className="text-xl font-bold text-brand-400">
             CaterCare
           </Link>
           <div className="flex gap-4 text-sm">
@@ -114,7 +114,7 @@ export default function DriverDashboard() {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h2 className="font-semibold">Status</h2>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-[var(--color-text-secondary)]">
                 {profile.isOnline ? 'You are accepting jobs.' : 'You are offline.'}
               </p>
             </div>
@@ -126,11 +126,11 @@ export default function DriverDashboard() {
               {loading ? '…' : profile.isOnline ? 'Go offline' : 'Go online'}
             </Button>
           </div>
-          {error && <p className="text-sm text-red-700 mb-3">{error}</p>}
+          {error && <p className="text-sm text-red-300 mb-3">{error}</p>}
           <ul className="space-y-1 text-sm">
             {allChecks.map((c) => (
               <li key={c.label} className="flex items-center gap-2">
-                <span className={c.ok ? 'text-green-600' : 'text-amber-600'}>
+                <span className={c.ok ? 'text-emerald-400' : 'text-amber-400'}>
                   {c.ok ? '✓' : '○'}
                 </span>
                 {c.label}

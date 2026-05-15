@@ -39,10 +39,10 @@ export default function AdminOrdersPage() {
   }, [state]);
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <Link href="/admin" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/admin" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Admin
           </Link>
         </div>
@@ -55,7 +55,7 @@ export default function AdminOrdersPage() {
               key={s ?? 'all'}
               onClick={() => setState(s)}
               className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
-                state === s ? 'bg-brand-500 text-white' : 'bg-white border border-slate-300'
+                state === s ? 'bg-brand-400/150 text-white' : 'bg-[var(--color-surface-1)] border border-[var(--color-surface-3)]'
               }`}
             >
               {s ?? 'All'}
@@ -63,7 +63,7 @@ export default function AdminOrdersPage() {
           ))}
         </div>
         {orders.length === 0 ? (
-          <Card><p className="text-slate-600">No orders match.</p></Card>
+          <Card><p className="text-[var(--color-text-secondary)]">No orders match.</p></Card>
         ) : (
           orders.map((o) => (
             <Link key={o.id} href={`/admin/orders/${o.id}`}>
@@ -74,7 +74,7 @@ export default function AdminOrdersPage() {
                       {o.buyer.name} → {o.cook.name}
                       {o.driver?.name && ` (driver: ${o.driver.name})`}
                     </h3>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-[var(--color-text-tertiary)]">
                       {new Date(o.createdAt).toLocaleString()} · <strong>{o.state}</strong>
                     </p>
                   </div>

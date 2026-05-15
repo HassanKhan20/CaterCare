@@ -85,10 +85,10 @@ export default function NewDishPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cook/dishes" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/cook/dishes" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dishes
           </Link>
         </div>
@@ -105,7 +105,7 @@ export default function NewDishPage() {
               onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
               className="text-sm"
             />
-            {photoFile && <p className="text-xs text-slate-500 mt-1">{photoFile.name}</p>}
+            {photoFile && <p className="text-xs text-[var(--color-text-tertiary)] mt-1">{photoFile.name}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Name</label>
@@ -116,7 +116,7 @@ export default function NewDishPage() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-slate-300"
+              className="w-full px-3 py-2 rounded-md border border-[var(--color-surface-3)]"
               rows={3}
             />
           </div>
@@ -157,8 +157,8 @@ export default function NewDishPage() {
                   onClick={() => toggleAllergen(a)}
                   className={`px-3 py-1 rounded-full text-xs border ${
                     allergens.includes(a)
-                      ? 'bg-amber-100 border-amber-400 text-amber-900'
-                      : 'bg-white border-slate-300 text-slate-600'
+                      ? 'bg-amber-500/15 border-amber-400 text-amber-900'
+                      : 'bg-[var(--color-surface-1)] border-[var(--color-surface-3)] text-[var(--color-text-secondary)]'
                   }`}
                 >
                   {a}
@@ -171,7 +171,7 @@ export default function NewDishPage() {
             <select
               value={dishCategory}
               onChange={(e) => setDishCategory(e.target.value as 'NON_TCS' | 'TCS')}
-              className="w-full px-3 py-2 rounded-md border border-slate-300"
+              className="w-full px-3 py-2 rounded-md border border-[var(--color-surface-3)]"
             >
               <option value="NON_TCS">Non-TCS (shelf-stable: baked goods, jams, dry mixes)</option>
               <option value="TCS">TCS (refrigerated / prepared meal — requires DSHS registration)</option>
@@ -179,7 +179,7 @@ export default function NewDishPage() {
           </div>
         </Card>
 
-        <Card className="bg-amber-50 border-amber-200">
+        <Card className="bg-amber-500/10 border-amber-500/30">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -195,8 +195,8 @@ export default function NewDishPage() {
           </label>
         </Card>
 
-        {error && <p className="text-sm text-red-700">{error}</p>}
-        {warning && <p className="text-sm text-amber-700">{warning}</p>}
+        {error && <p className="text-sm text-red-300">{error}</p>}
+        {warning && <p className="text-sm text-amber-300">{warning}</p>}
 
         <Button className="w-full" onClick={submit} disabled={submitting}>
           {submitting ? 'Saving…' : 'Save dish'}

@@ -55,10 +55,10 @@ export default function DriverEarningsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/driver" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/driver" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dashboard
           </Link>
         </div>
@@ -88,7 +88,7 @@ export default function DriverEarningsPage() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="font-semibold">Instant payout</h2>
-              <p className="text-sm text-slate-600">1% Stripe fee. Bank transfers free.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">1% Stripe fee. Bank transfers free.</p>
             </div>
             <Button onClick={payoutNow} disabled={submitting}>
               {submitting ? '…' : 'Pay me now'}
@@ -102,7 +102,7 @@ export default function DriverEarningsPage() {
                   href={onboardingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-brand-700 underline"
+                  className="text-brand-400 underline"
                 >
                   Link a debit card →
                 </a>
@@ -114,11 +114,11 @@ export default function DriverEarningsPage() {
         <Card>
           <h2 className="font-semibold mb-3">Recent deliveries</h2>
           {data.recent.length === 0 ? (
-            <p className="text-sm text-slate-600">No deliveries yet.</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">No deliveries yet.</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-500">
+                <tr className="text-left text-[var(--color-text-tertiary)]">
                   <th className="py-2">Date</th>
                   <th>Base</th>
                   <th>Tip</th>
@@ -148,9 +148,9 @@ export default function DriverEarningsPage() {
 function Stat({ label, cents, count }: { label: string; cents: number; count: number }) {
   return (
     <Card>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-[var(--color-text-tertiary)]">{label}</p>
       <p className="text-2xl font-bold">${(cents / 100).toFixed(2)}</p>
-      <p className="text-xs text-slate-500">{count} deliveries</p>
+      <p className="text-xs text-[var(--color-text-tertiary)]">{count} deliveries</p>
     </Card>
   );
 }

@@ -88,10 +88,10 @@ export default function DriverVerificationPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/driver" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/driver" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Dashboard
           </Link>
         </div>
@@ -131,7 +131,7 @@ export default function DriverVerificationPage() {
         <Card>
           <h3 className="font-semibold mb-2">Date of birth</h3>
           <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
-          <p className="text-xs text-slate-500 mt-1">Must be 18+</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Must be 18+</p>
         </Card>
 
         <FileField
@@ -140,7 +140,7 @@ export default function DriverVerificationPage() {
           onChange={setThermalBagFile}
         />
 
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-red-300">{error}</p>}
 
         <Button className="w-full" onClick={submit} disabled={submitting}>
           {submitting ? 'Uploading…' : 'Submit for review'}
@@ -170,7 +170,7 @@ function FileField({
         onChange={(e) => onChange(e.target.files?.[0] ?? null)}
         className="text-sm"
       />
-      {file && <p className="text-xs text-slate-500 mt-1">{file.name}</p>}
+      {file && <p className="text-xs text-[var(--color-text-tertiary)] mt-1">{file.name}</p>}
       {extra && <div className="mt-2">{extra}</div>}
     </Card>
   );

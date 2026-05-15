@@ -24,10 +24,10 @@ export default function AdminDriversPage() {
   }, [filter]);
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)]">
+      <header className="border-b bg-[var(--color-surface-1)]">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <Link href="/admin" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/admin" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             ← Admin
           </Link>
         </div>
@@ -40,7 +40,7 @@ export default function AdminDriversPage() {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded-full text-sm capitalize ${
-                filter === f ? 'bg-brand-500 text-white' : 'bg-white border border-slate-300'
+                filter === f ? 'bg-brand-400/150 text-white' : 'bg-[var(--color-surface-1)] border border-[var(--color-surface-3)]'
               }`}
             >
               {f}
@@ -48,7 +48,7 @@ export default function AdminDriversPage() {
           ))}
         </div>
         {drivers.length === 0 ? (
-          <Card><p className="text-slate-600">No drivers.</p></Card>
+          <Card><p className="text-[var(--color-text-secondary)]">No drivers.</p></Card>
         ) : (
           drivers.map((d) => (
             <Link key={d.userId} href={`/admin/drivers/${d.userId}`}>
@@ -56,12 +56,12 @@ export default function AdminDriversPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold">{d.user.name}</h3>
-                    <p className="text-sm text-slate-600">{d.user.email}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)]">{d.user.email}</p>
                   </div>
                   <div className="text-xs text-right space-y-1">
                     <div>Docs: {d.docsStatus}</div>
                     <div>BG check: {d.backgroundCheckStatus}</div>
-                    {d.approvedAt && <div className="text-green-700">✓ Approved</div>}
+                    {d.approvedAt && <div className="text-emerald-300">✓ Approved</div>}
                   </div>
                 </div>
               </Card>

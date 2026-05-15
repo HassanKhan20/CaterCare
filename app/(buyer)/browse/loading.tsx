@@ -1,28 +1,60 @@
 export default function BrowseLoading() {
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 w-48 bg-slate-200 rounded-lg" />
-          <div className="h-4 w-32 bg-slate-200 rounded" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-                <div className="h-32 bg-slate-200" />
-                <div className="p-4 space-y-2">
-                  <div className="h-4 w-3/4 bg-slate-200 rounded" />
-                  <div className="flex gap-1">
-                    <div className="h-3 w-12 bg-slate-200 rounded-full" />
-                    <div className="h-3 w-16 bg-slate-200 rounded-full" />
-                  </div>
-                  <div className="h-3 w-full bg-slate-200 rounded" />
-                  <div className="h-3 w-1/2 bg-slate-200 rounded" />
+    <main className="cc-page">
+      <section className="cc-hero">
+        <div style={{ display: 'flex', gap: 12, marginBottom: 32 }}>
+          <Skeleton width={180} height={28} pill />
+          <Skeleton width={140} height={28} pill />
+        </div>
+        <Skeleton height={84} width="80%" />
+        <div style={{ marginTop: 56, display: 'flex', gap: 24 }}>
+          <Skeleton width={100} height={48} />
+          <Skeleton width={100} height={48} />
+          <Skeleton width={100} height={48} />
+        </div>
+      </section>
+      <section className="cc-section">
+        <div className="cc-grid">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i}>
+              <Skeleton aspect="5 / 4" radius={4} />
+              <div style={{ marginTop: 16 }}>
+                <Skeleton width={80} height={11} />
+                <div style={{ marginTop: 8 }}>
+                  <Skeleton width="70%" height={24} />
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
     </main>
+  );
+}
+
+function Skeleton({
+  width,
+  height,
+  aspect,
+  radius = 4,
+  pill,
+}: {
+  width?: number | string;
+  height?: number | string;
+  aspect?: string;
+  radius?: number;
+  pill?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        width: width ?? '100%',
+        height,
+        aspectRatio: aspect,
+        background: 'var(--bg-soft)',
+        borderRadius: pill ? 999 : radius,
+        animation: 'cc-pulse 1.6s ease-in-out infinite',
+      }}
+    />
   );
 }

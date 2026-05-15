@@ -1,138 +1,217 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { Btn } from '@/components/ui/Btn';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[var(--color-surface-0)]">
-      {/* Soft decorative wash */}
-      <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-gradient-to-bl from-brand-400/8 via-transparent to-transparent pointer-events-none" />
-
-      {/* Nav */}
-      <nav className="relative max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-        <Link href="/" className="text-2xl font-bold tracking-tight">
-          CaterCare
+    <main className="cc-page">
+      {/* Top bar */}
+      <nav
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '24px 0',
+        }}
+      >
+        <Link href="/" className="cc-logo cc-logo-static">
+          <span className="cc-logo-mark">
+            <svg viewBox="0 0 32 32" width="22" height="22">
+              <circle
+                cx="16"
+                cy="16"
+                r="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+              />
+              <path
+                d="M9 16c2-3 5-3 7 0s5 3 7 0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <span className="cc-logo-text">catercare</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', gap: 8 }}>
           <Link href="/signin">
-            <Button variant="ghost" size="sm">
+            <Btn variant="ghost" size="sm">
               Sign in
-            </Button>
+            </Btn>
           </Link>
           <Link href="/browse">
-            <Button size="sm">Order food</Button>
+            <Btn variant="primary" size="sm">
+              Order food
+            </Btn>
           </Link>
         </div>
       </nav>
 
-      {/* Hero — split: bold copy left, photo right */}
-      <section className="relative max-w-7xl mx-auto px-6 py-12 md:py-20 grid md:grid-cols-2 gap-12 items-center">
-        <div>
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-400/10 text-brand-300 rounded-full text-xs font-semibold uppercase tracking-wider mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
-            Now in DFW
+      {/* Hero */}
+      <section className="cc-hero" style={{ paddingTop: 32 }}>
+        <div className="cc-hero-meta">
+          <span className="cc-tag">Now in DFW</span>
+          <span className="cc-tag-dot">
+            Plano · Frisco · Allen · Dallas
           </span>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[0.95]">
-            Real food
-            <br />
-            from <span className="text-brand-400">real</span>
-            <br />
-            <span className="text-brand-400">neighbors</span>.
-          </h1>
-          <p className="mt-6 text-lg text-[#f5f1ec]/60 max-w-md leading-relaxed">
-            Home cooks in your neighborhood. Delivered by drivers who keep 100% of
-            their tips. Built for the people doing the work.
-          </p>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="/browse">
-              <Button size="lg">Browse cooks near me</Button>
-            </Link>
-            <Link href="/cook/onboarding">
-              <Button variant="secondary" size="lg">
-                Become a cook
-              </Button>
-            </Link>
-          </div>
         </div>
-
-        {/* Hero photo collage */}
-        <div className="relative h-[500px] hidden md:block">
-          <div className="absolute top-0 right-0 w-[280px] h-[360px] rounded-3xl overflow-hidden shadow-2xl">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80"
-              alt="Fresh salad bowl"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="absolute bottom-0 left-0 w-[260px] h-[320px] rounded-3xl overflow-hidden shadow-2xl">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80"
-              alt="Pizza"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="absolute top-[140px] left-[180px] w-[160px] h-[160px] rounded-full overflow-hidden shadow-2xl ring-4 ring-[var(--color-surface-0)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&q=80"
-              alt="Biryani"
-              className="w-full h-full object-cover"
-            />
+        <h1 className="cc-hero-title">
+          Dinner from the kitchen down the street.
+        </h1>
+        <div className="cc-hero-foot">
+          <p className="cc-hero-desc">
+            Home cooks in your neighborhood. Delivered by drivers who keep 100% of
+            their tips. Built for the people doing the work — under Texas SB&nbsp;541.
+          </p>
+          <div className="cc-hero-stats">
+            <Stat label="Cook payout" value="88¢/$1" tone="accent" />
+            <Stat label="Avg fee vs. apps" value="−18%" />
+            <Stat label="Tips to drivers" value="100%" />
           </div>
         </div>
       </section>
 
-      {/* Three-up explainer */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="grid md:grid-cols-3 gap-4">
-          <Feature
-            emoji="👩‍🍳"
-            title="For cooks"
-            body="Sell from your kitchen. Set your own hours. We take just 10% — way less than DoorDash."
-          />
-          <Feature
-            emoji="🍽️"
-            title="For neighbors"
-            body="Discover Pakistani, Mexican, Ethiopian and more — made by people who live near you."
-          />
-          <Feature
-            emoji="🚗"
-            title="For drivers"
-            body="Claim deliveries on your schedule. See exact tips before you accept. Keep 100%."
-          />
+      {/* Three-up */}
+      <section className="cc-section">
+        <header className="cc-section-head">
+          <div>
+            <h3 className="cc-section-title">Built three ways.</h3>
+            <p className="cc-section-sub">Cooks, neighbors, drivers — fair on every side.</p>
+          </div>
+        </header>
+        <div className="cc-about-grid" style={{ padding: 0 }}>
+          <div>
+            <h3>For cooks</h3>
+            <p>
+              Sell from your kitchen. Set your own hours. 10% platform fee — much
+              less than the apps take.
+            </p>
+            <Link href="/cook/onboarding" className="cc-link-sm">
+              Apply to cook →
+            </Link>
+          </div>
+          <div>
+            <h3>For neighbors</h3>
+            <p>
+              Discover Pakistani, Mexican, Ethiopian and more — made by people who
+              live near you.
+            </p>
+            <Link href="/browse" className="cc-link-sm">
+              Browse cooks →
+            </Link>
+          </div>
+          <div>
+            <h3>For drivers</h3>
+            <p>
+              Claim deliveries on your schedule. See exact tips before you accept.
+              Keep 100% of them.
+            </p>
+            <Link href="/driver/onboarding" className="cc-link-sm">
+              Drive for us →
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Fairness band */}
-      <section className="max-w-6xl mx-auto px-6 pb-20">
-        <div className="rounded-3xl bg-gradient-to-br from-brand-400/15 to-transparent border border-brand-400/20 p-12 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">
+      <section className="cc-section">
+        <div
+          style={{
+            border: '1px solid var(--line)',
+            background: 'var(--surface)',
+            borderRadius: 4,
+            padding: 'clamp(40px, 6vw, 72px)',
+            textAlign: 'center',
+          }}
+        >
+          <h2
+            className="cc-section-title"
+            style={{ fontSize: 'clamp(32px, 4vw, 52px)', marginBottom: 16 }}
+          >
             We&apos;re not DoorDash.
           </h2>
-          <p className="text-lg text-[#f5f1ec]/70 max-w-2xl mx-auto">
-            Cooks keep 88%+ of every order. Drivers see the exact tip before they
+          <p
+            className="cc-hero-desc"
+            style={{ maxWidth: '52ch', margin: '0 auto' }}
+          >
+            Cooks keep 88¢ of every dollar. Drivers see the exact tip before they
             accept. No pooled tips, no surprise fees, no surprise commissions.
           </p>
+          <div style={{ marginTop: 28 }}>
+            <Link href="/browse">
+              <Btn variant="primary" size="lg" iconAfter="arrow-right">
+                Start ordering
+              </Btn>
+            </Link>
+          </div>
         </div>
       </section>
 
-      <footer className="max-w-7xl mx-auto px-6 py-10 text-sm text-[#f5f1ec]/40 flex justify-between border-t border-[var(--color-surface-3)]">
-        <span>© CaterCare · DFW · Texas SB 541 compliant</span>
-        <Link href="/signin" className="hover:text-brand-400 transition-colors">
-          Sign in
-        </Link>
+      {/* Footer */}
+      <footer className="cc-footer">
+        <div className="cc-footer-inner">
+          <div>
+            <div className="cc-logo cc-logo-static">
+              <span className="cc-logo-mark">
+                <svg viewBox="0 0 32 32" width="22" height="22">
+                  <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" strokeWidth="2.4" />
+                  <path d="M9 16c2-3 5-3 7 0s5 3 7 0" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span className="cc-logo-text">catercare</span>
+            </div>
+            <p className="cc-footer-tag">
+              Hyperlocal home food, DFW.
+              <br />
+              Built under Texas SB 541.
+            </p>
+          </div>
+          <FooterCol title="Eat" links={['Browse cooks', 'Cuisines']} />
+          <FooterCol title="Cook with us" links={['Apply to cook', 'DSHS guide']} />
+          <FooterCol title="Deliver" links={['Become a driver']} />
+          <FooterCol title="Catercare" links={['About', 'Terms', 'Privacy']} />
+        </div>
+        <div className="cc-footer-bottom">
+          <span>© 2026 Catercare, Inc.</span>
+          <span className="cc-mono">
+            10–12% cook commission · 8–10% buyer fee · 100% of tips to drivers
+          </span>
+        </div>
       </footer>
     </main>
   );
 }
 
-function Feature({ emoji, title, body }: { emoji: string; title: string; body: string }) {
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: 'accent';
+}) {
   return (
-    <div className="rounded-3xl bg-[var(--color-surface-1)] border border-[var(--color-surface-3)] p-8 hover:border-brand-400/30 transition-colors">
-      <div className="text-4xl mb-4">{emoji}</div>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-[#f5f1ec]/60 leading-relaxed">{body}</p>
+    <div className="cc-stat" data-tone={tone}>
+      <div className="cc-stat-val">{value}</div>
+      <div className="cc-stat-lab">{label}</div>
+    </div>
+  );
+}
+
+function FooterCol({ title, links }: { title: string; links: string[] }) {
+  return (
+    <div className="cc-footer-col">
+      <h4>{title}</h4>
+      <ul>
+        {links.map((l) => (
+          <li key={l}>
+            <a href="#">{l}</a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

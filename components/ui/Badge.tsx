@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 
 const STATE_STYLES: Record<string, string> = {
-  DRAFT:             'bg-[var(--color-surface-2)] text-[#f5f1ec]/60',
+  DRAFT:             'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-surface-3)]',
   PLACED:            'bg-blue-500/15 text-blue-300 border border-blue-500/30',
   COOK_ACCEPTED:     'bg-blue-500/20 text-blue-200 border border-blue-500/40',
   COOK_DECLINED:     'bg-red-500/15 text-red-300 border border-red-500/30',
@@ -12,7 +12,7 @@ const STATE_STYLES: Record<string, string> = {
   DELIVERED:         'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
   COMPLETED:         'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40',
   CANCELLED:         'bg-red-500/20 text-red-200 border border-red-500/40',
-  REFUNDED:          'bg-[var(--color-surface-2)] text-[#f5f1ec]/40',
+  REFUNDED:          'bg-[var(--color-surface-2)] text-[var(--color-text-tertiary)] border border-[var(--color-surface-3)]',
 };
 
 const STATE_LABELS: Record<string, string> = {
@@ -36,7 +36,7 @@ type Props = {
 };
 
 export function Badge({ state, className }: Props) {
-  const style = STATE_STYLES[state] ?? 'bg-[var(--color-surface-2)] text-[#f5f1ec]/60';
+  const style = STATE_STYLES[state] ?? 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]';
   const label = STATE_LABELS[state] ?? state;
   return (
     <span
