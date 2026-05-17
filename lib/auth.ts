@@ -27,6 +27,9 @@ const isDev = process.env.NODE_ENV === 'development';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  // Required on Vercel/any reverse proxy: lets NextAuth derive the callback
+  // URL from the forwarded host instead of a hardcoded NEXTAUTH_URL.
+  trustHost: true,
   // JWT strategy required for Credentials provider + works in Edge middleware
   session: { strategy: 'jwt' },
   providers: [
