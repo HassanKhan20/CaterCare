@@ -14,7 +14,7 @@ export function Card({ className, variant = 'default', ...props }: CardProps) {
   return (
     <div
       className={clsx(
-        'rounded-2xl text-[#f5f1ec] p-6',
+        'rounded-2xl text-[var(--color-text-primary)] p-6',
         variants[variant],
         className,
       )}

@@ -1321,3 +1321,37 @@ a.cc-bag-btn {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.55; }
 }
+
+/* ===============================================================
+   COMPATIBILITY LAYER
+   Admin / cook / driver pages still use the previous design system's
+   variable + utility names. Alias them onto the prototype tokens so
+   they render legibly on the light olive palette instead of
+   light-on-light. (Buyer flow uses cc-* classes directly and is
+   unaffected by this block.)
+   =============================================================== */
+:root {
+  --color-surface-0: var(--bg);
+  --color-surface-1: var(--surface);
+  --color-surface-2: var(--bg-soft);
+  --color-surface-3: var(--line);
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-tertiary: var(--muted);
+  --color-text-disabled: var(--muted-2);
+}
+
+/* Map the old Tailwind `brand-*` named scale onto the prototype accent
+   so utilities like bg-brand-400 / text-brand-400 resolve correctly. */
+@theme {
+  --color-brand-50:  color-mix(in oklab, var(--accent) 10%, var(--bg));
+  --color-brand-100: color-mix(in oklab, var(--accent) 18%, var(--bg));
+  --color-brand-200: color-mix(in oklab, var(--accent) 30%, var(--bg));
+  --color-brand-300: color-mix(in oklab, var(--accent) 55%, var(--bg));
+  --color-brand-400: var(--accent);
+  --color-brand-500: var(--accent);
+  --color-brand-600: color-mix(in oklab, var(--accent) 80%, black);
+  --color-brand-700: color-mix(in oklab, var(--accent) 65%, black);
+  --color-brand-800: color-mix(in oklab, var(--accent) 50%, black);
+  --color-brand-900: color-mix(in oklab, var(--accent) 40%, black);
+}
