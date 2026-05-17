@@ -61,7 +61,7 @@ export default function AdminDriversPage() {
                   <div className="text-xs text-right space-y-1">
                     <div>Docs: {d.docsStatus}</div>
                     <div>BG check: {d.backgroundCheckStatus}</div>
-                    {d.approvedAt && <div className="text-emerald-300">✓ Approved</div>}
+                    {d.approvedAt && <div className="text-emerald-700">✓ Approved</div>}
                   </div>
                 </div>
               </Card>

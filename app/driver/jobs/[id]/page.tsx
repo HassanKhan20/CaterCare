@@ -201,7 +201,7 @@ export default function DriverJobDetailPage({
         {isPickedUp && (
           <Card className="space-y-3">
             <p className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide font-medium">
-              Delivery photo <span className="text-red-400">*</span>
+              Delivery photo <span className="text-red-700">*</span>
             </p>
             <p className="text-sm text-[var(--color-text-secondary)]">
               Take a photo of the delivered order at the door before confirming.
@@ -242,7 +242,7 @@ export default function DriverJobDetailPage({
         )}
 
         {error && (
-          <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300">
+          <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}

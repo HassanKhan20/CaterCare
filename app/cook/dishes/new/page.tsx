@@ -195,8 +195,8 @@ export default function NewDishPage() {
           </label>
         </Card>
 
-        {error && <p className="text-sm text-red-300">{error}</p>}
-        {warning && <p className="text-sm text-amber-300">{warning}</p>}
+        {error && <p className="text-sm text-red-700">{error}</p>}
+        {warning && <p className="text-sm text-amber-700">{warning}</p>}
 
         <Button className="w-full" onClick={submit} disabled={submitting}>
           {submitting ? 'Saving…' : 'Save dish'}

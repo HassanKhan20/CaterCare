@@ -36,7 +36,7 @@ export default function CookPayoutsPage() {
         <Card>
           {profile?.stripeOnboardingComplete ? (
             <>
-              <p className="text-emerald-300 font-medium">✓ Your payout account is linked.</p>
+              <p className="text-emerald-700 font-medium">✓ Your payout account is linked.</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-2">
                 After each delivered order, your portion transfers directly to your bank.
               </p>

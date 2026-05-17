@@ -126,11 +126,11 @@ export default function DriverDashboard() {
               {loading ? '…' : profile.isOnline ? 'Go offline' : 'Go online'}
             </Button>
           </div>
-          {error && <p className="text-sm text-red-300 mb-3">{error}</p>}
+          {error && <p className="text-sm text-red-700 mb-3">{error}</p>}
           <ul className="space-y-1 text-sm">
             {allChecks.map((c) => (
               <li key={c.label} className="flex items-center gap-2">
-                <span className={c.ok ? 'text-emerald-400' : 'text-amber-400'}>
+                <span className={c.ok ? 'text-emerald-700' : 'text-amber-700'}>
                   {c.ok ? '✓' : '○'}
                 </span>
                 {c.label}

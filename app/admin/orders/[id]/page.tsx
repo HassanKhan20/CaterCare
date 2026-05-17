@@ -105,7 +105,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             <Row label="Platform revenue" cents={order.platformRevenueCents} bold />
           </div>
           {order.containsTcsItems && (
-            <p className="text-xs text-blue-300 mt-2">Contains TCS items.</p>
+            <p className="text-xs text-blue-700 mt-2">Contains TCS items.</p>
           )}
         </Card>
 

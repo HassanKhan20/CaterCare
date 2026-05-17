@@ -140,7 +140,7 @@ export default function DriverVerificationPage() {
           onChange={setThermalBagFile}
         />
 
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p className="text-sm text-red-700">{error}</p>}
 
         <Button className="w-full" onClick={submit} disabled={submitting}>
           {submitting ? 'Uploading…' : 'Submit for review'}

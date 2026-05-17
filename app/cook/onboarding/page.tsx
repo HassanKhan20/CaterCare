@@ -83,7 +83,7 @@ export default function CookOnboardingPage() {
           </div>
         </Card>
 
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p className="text-sm text-red-700">{error}</p>}
 
         <Button className="w-full" onClick={submit} disabled={submitting}>
           {submitting ? '…' : 'Continue to ID verification'}

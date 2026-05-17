@@ -77,7 +77,7 @@ export default function CookDashboard() {
             {checks.map((c) => (
               <li key={c.label} className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <span className={c.ok ? 'text-emerald-400' : 'text-amber-400'}>
+                  <span className={c.ok ? 'text-emerald-700' : 'text-amber-700'}>
                     {c.ok ? '✓' : '○'}
                   </span>
                   {c.label}

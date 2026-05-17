@@ -140,7 +140,7 @@ export default function AdminCookDetailPage({ params }: { params: Promise<{ id: 
               <Button variant="danger" onClick={rejectCook}>Reject</Button>
             </div>
             {cook.rejectedReason && (
-              <p className="text-sm text-red-300 mt-2">Reason on file: {cook.rejectedReason}</p>
+              <p className="text-sm text-red-700 mt-2">Reason on file: {cook.rejectedReason}</p>
             )}
           </Card>
         )}
@@ -200,11 +200,11 @@ function DocRow({
       <span
         className={`text-xs px-2 py-1 rounded ${
           status === 'APPROVED'
-            ? 'bg-emerald-500/15 text-emerald-300'
+            ? 'bg-emerald-500/15 text-emerald-700'
             : status === 'PENDING'
-              ? 'bg-amber-500/15 text-amber-300'
+              ? 'bg-amber-500/15 text-amber-700'
               : status === 'REJECTED'
-                ? 'bg-red-500/15 text-red-300'
+                ? 'bg-red-500/15 text-red-700'
                 : 'bg-[var(--color-surface-2)] text-[var(--color-text-tertiary)]'
         }`}
       >

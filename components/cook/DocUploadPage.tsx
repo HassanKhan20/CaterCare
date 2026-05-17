@@ -71,17 +71,20 @@ export function DocUploadPage(props: Props) {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]">
+      <header className="border-b border-[var(--color-surface-3)] bg-[var(--color-surface-1)]">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cook" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link
+            href="/cook"
+            className="text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
+          >
             ← Dashboard
           </Link>
         </div>
       </header>
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
         <h1 className="text-3xl font-bold">{props.title}</h1>
-        <p className="text-slate-600">{props.description}</p>
+        <p className="text-[var(--color-text-secondary)]">{props.description}</p>
 
         <Card className="space-y-4">
           <div>
@@ -92,7 +95,9 @@ export function DocUploadPage(props: Props) {
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="text-sm"
             />
-            {file && <p className="text-xs text-slate-500 mt-1">{file.name}</p>}
+            {file && (
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">{file.name}</p>
+            )}
           </div>
           {props.requireExpiry && (
             <div>
@@ -102,7 +107,7 @@ export function DocUploadPage(props: Props) {
           )}
         </Card>
 
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-[var(--color-danger,#A63A2C)]">{error}</p>}
 
         <Button className="w-full" onClick={submit} disabled={submitting}>
           {submitting ? 'Uploading…' : 'Submit'}

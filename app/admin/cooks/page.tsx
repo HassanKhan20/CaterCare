@@ -69,7 +69,7 @@ export default function AdminCooksPage() {
                     <StatusBadge label="ID" status={c.idStatus} />
                     <StatusBadge label="Cert" status={c.foodHandlerCertStatus} />
                     <StatusBadge label="DSHS" status={c.dshsRegistrationStatus} />
-                    {c.approvedAt && <span className="text-emerald-300 block">✓ Approved</span>}
+                    {c.approvedAt && <span className="text-emerald-700 block">✓ Approved</span>}
                   </div>
                 </div>
               </Card>
@@ -84,11 +84,11 @@ export default function AdminCooksPage() {
 function StatusBadge({ label, status }: { label: string; status: string }) {
   const color =
     status === 'APPROVED'
-      ? 'text-emerald-300'
+      ? 'text-emerald-700'
       : status === 'PENDING'
-        ? 'text-amber-300'
+        ? 'text-amber-700'
         : status === 'REJECTED'
-          ? 'text-red-300'
+          ? 'text-red-700'
           : 'text-[var(--color-text-tertiary)]';
   return (
     <div className={color}>

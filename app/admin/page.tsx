@@ -76,7 +76,7 @@ export default function AdminDashboard() {
               )}
               {m.stuckOrders > 0 && (
                 <li>
-                  <Link href="/admin/orders?state=READY_FOR_PICKUP" className="text-red-300 font-medium underline">
+                  <Link href="/admin/orders?state=READY_FOR_PICKUP" className="text-red-700 font-medium underline">
                     {m.stuckOrders} order{m.stuckOrders === 1 ? '' : 's'} unclaimed &gt;15min — assign a driver!
                   </Link>
                 </li>
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-xs text-[var(--color-text-tertiary)]">GMV (this week)</p>
               <p className="text-2xl font-bold">${gmvThis.toLocaleString()}</p>
-              <p className={`text-xs ${delta >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+              <p className={`text-xs ${delta >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                 {delta >= 0 ? '+' : ''}
                 {delta.toFixed(1)}% vs last week
               </p>

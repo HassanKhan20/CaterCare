@@ -68,7 +68,7 @@ export default function CookDishesPage() {
                 </div>
                 <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">{d.description}</p>
                 <div className="flex gap-2 mt-1 text-xs">
-                  <span className={d.isActive ? 'text-emerald-300' : 'text-[var(--color-text-tertiary)]'}>
+                  <span className={d.isActive ? 'text-emerald-700' : 'text-[var(--color-text-tertiary)]'}>
                     {d.isActive ? 'Active' : 'Inactive'}
                   </span>
                   <span className="text-[var(--color-text-tertiary)]">·</span>

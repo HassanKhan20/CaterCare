@@ -83,18 +83,18 @@ export default function CookEarningsPage() {
             <div className={`h-full ${warningColor}`} style={{ width: `${pct}%` }} />
           </div>
           {data.gmvWarning === 'soft' && (
-            <p className="text-amber-300 text-sm mt-2">
+            <p className="text-amber-700 text-sm mt-2">
               Approaching $125K. Start thinking about a commercial permit.
             </p>
           )}
           {data.gmvWarning === 'hard' && (
-            <p className="text-red-300 text-sm mt-2">
+            <p className="text-red-700 text-sm mt-2">
               You&apos;ve crossed $145K. Listings pause at $150K until you obtain a Dallas Retail
               Food Establishment Permit.
             </p>
           )}
           {data.gmvWarning === 'admin' && (
-            <p className="text-red-300 font-medium text-sm mt-2">
+            <p className="text-red-700 font-medium text-sm mt-2">
               You&apos;re very close to the cap. Reach out to support immediately to avoid an
               outage.
             </p>

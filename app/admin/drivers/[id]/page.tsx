@@ -84,7 +84,7 @@ export default function AdminDriverDetailPage({ params }: { params: Promise<{ id
           <h1 className="text-3xl font-bold">
             {driver.user.name}
             {driver.thermalBagPhotoUrl && (
-              <span className="ml-3 text-xs bg-emerald-500/15 text-emerald-300 px-2 py-1 rounded-full">
+              <span className="ml-3 text-xs bg-emerald-500/15 text-emerald-700 px-2 py-1 rounded-full">
                 ✓ Verified Bag
               </span>
             )}
@@ -130,7 +130,7 @@ export default function AdminDriverDetailPage({ params }: { params: Promise<{ id
               <Button variant="danger" onClick={reject}>Reject</Button>
             </div>
             {driver.rejectedReason && (
-              <p className="text-sm text-red-300 mt-2">Reason on file: {driver.rejectedReason}</p>
+              <p className="text-sm text-red-700 mt-2">Reason on file: {driver.rejectedReason}</p>
             )}
           </Card>
         )}
