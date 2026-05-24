@@ -15,8 +15,10 @@ import {
   type Cart,
 } from '@/lib/cart';
 
+// Buyer service-fee % for the cart preview. The authoritative numbers
+// (incl. distance-based delivery + tip) come from /api/orders/quote at
+// checkout once an address is selected — the cart can't know those yet.
 const SERVICE_FEE_PCT = 9;
-const DELIVERY_CENTS = 449;
 
 export default function CartPage() {
   const router = useRouter();
@@ -55,9 +57,6 @@ export default function CartPage() {
 
   const subtotal = cartSubtotalCents(cart);
   const serviceFee = Math.round((subtotal * SERVICE_FEE_PCT) / 100);
-  const delivery = subtotal > 0 ? DELIVERY_CENTS : 0;
-  const tip = Math.round(delivery * 1.0); // suggested
-  const total = subtotal + serviceFee + delivery + tip;
 
   return (
     <main className="cc-page cc-page-narrow">
@@ -128,10 +127,15 @@ export default function CartPage() {
         <div className="cc-totals">
           <TotalLine label="Subtotal" value={subtotal} />
           <TotalLine label={`Service fee (${SERVICE_FEE_PCT}%)`} value={serviceFee} sub="vs. ~30% on apps" />
-          <TotalLine label="Delivery" value={delivery} />
-          <TotalLine label="Driver tip" value={tip} sub="100% to driver" />
+          <div className="cc-total-line">
+            <div className="cc-total-label">
+              Delivery &amp; tip
+              <span className="cc-total-sub">calculated at checkout</span>
+            </div>
+            <div className="cc-total-val cc-mono">—</div>
+          </div>
           <div className="cc-total-divider" />
-          <TotalLine label="Total" value={total} large />
+          <TotalLine label="Estimated so far" value={subtotal + serviceFee} large />
         </div>
         <p className="cc-disclosure">
           <Icon name="shield" size={13} /> Home-kitchen disclosure: this food is prepared in a private home licensed under Texas SB&nbsp;541.
@@ -143,7 +147,7 @@ export default function CartPage() {
           iconAfter="arrow-right"
           onClick={() => router.push('/checkout')}
         >
-          Checkout · <PriceTag cents={total} />
+          Continue to checkout
         </Btn>
       </div>
     </main>

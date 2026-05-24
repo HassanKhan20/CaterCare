@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Btn } from '@/components/ui/Btn';
 import { Icon } from '@/components/ui/Icon';
 import { PriceTag } from '@/components/ui/PriceTag';
+import { PaymentStep } from '@/components/buyer/PaymentStep';
 import { loadCart, type Cart } from '@/lib/cart';
 
 type Address = {
@@ -75,6 +76,10 @@ export default function CheckoutPage() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set once the order + PaymentIntent exist; flips the page to the card step.
+  const [payment, setPayment] = useState<{ clientSecret: string; orderId: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     setCart(loadCart());
@@ -132,8 +137,12 @@ export default function CheckoutPage() {
         setError(json.error ?? 'Failed to create order');
         return;
       }
-      localStorage.removeItem('catercare:cart');
-      router.push(`/checkout/success/${json.orderId}`);
+      if (!json.clientSecret) {
+        setError('Payment could not be initialized. Please try again.');
+        return;
+      }
+      // Order created in DRAFT + PaymentIntent ready — advance to the card step.
+      setPayment({ clientSecret: json.clientSecret, orderId: json.orderId });
     } finally {
       setSubmitting(false);
     }
@@ -160,6 +169,37 @@ export default function CheckoutPage() {
     : { subtotal: subtotalCents, serviceFee: 0, delivery: 0, tip: tipCents };
   const total = totals.subtotal + totals.serviceFee + totals.delivery + totals.tip;
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
+
+  // Payment step — card collection via Stripe Elements
+  if (payment) {
+    return (
+      <main className="cc-page cc-page-narrow">
+        <button type="button" className="cc-back" onClick={() => setPayment(null)}>
+          <Icon name="arrow-left" size={14} /> Back to order
+        </button>
+        <header style={{ paddingTop: 16, paddingBottom: 24 }}>
+          <span className="cc-eye">Payment</span>
+          <h1 className="cc-page-title" style={{ marginTop: 8 }}>
+            How you&apos;ll pay
+          </h1>
+          <p className="cc-page-sub" style={{ marginTop: 8 }}>
+            <PriceTag cents={total} /> total · charged when you confirm
+          </p>
+        </header>
+        <PaymentStep
+          clientSecret={payment.clientSecret}
+          orderId={payment.orderId}
+          totalCents={total}
+        />
+        <p
+          className="cc-mono"
+          style={{ fontSize: 11, color: 'var(--muted)', marginTop: 16, textAlign: 'center' }}
+        >
+          Test card 4242 4242 4242 4242 · any future date · any CVC
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="cc-page cc-page-narrow">
@@ -285,7 +325,7 @@ export default function CheckoutPage() {
           disabled={!accepted || !selectedAddress || submitting}
           onClick={placeOrder}
         >
-          {submitting ? 'Placing order…' : 'Place order · '}
+          {submitting ? 'Starting payment…' : 'Continue to payment · '}
           <PriceTag cents={total} />
         </Btn>
       </div>
