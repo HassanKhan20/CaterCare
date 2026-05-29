@@ -1,20 +1,48 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Spinner } from '@/components/ui/Spinner';
 
-export default function CookOnboardingPage() {
+type Profile = {
+  photoUrl: string | null;
+  story: string | null;
+  cuisineTags: string[];
+  neighborhood: string | null;
+};
+
+export default function CookProfileEditPage() {
   const router = useRouter();
+  const [loaded, setLoaded] = useState(false);
   const [story, setStory] = useState('');
   const [cuisineTagsInput, setCuisineTagsInput] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch('/api/cook/profile');
+      if (res.ok) {
+        const { profile } = (await res.json()) as { profile: Profile | null };
+        if (profile) {
+          setStory(profile.story ?? '');
+          setCuisineTagsInput(profile.cuisineTags.join(', '));
+          setNeighborhood(profile.neighborhood ?? '');
+          setExistingPhotoUrl(profile.photoUrl ?? null);
+        }
+      }
+      setLoaded(true);
+    };
+    queueMicrotask(load);
+  }, []);
 
   const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -28,13 +56,14 @@ export default function CookOnboardingPage() {
       .map((s) => s.trim())
       .filter(Boolean);
     if (story.length < 10 || cuisineTags.length === 0 || !neighborhood) {
-      setError('Please fill all fields.');
+      setError('Please fill story, at least one cuisine, and your neighborhood.');
       return;
     }
     setSubmitting(true);
     setError(null);
+    setSaved(false);
     try {
-      let photoUrl: string | undefined;
+      let photoUrl: string | undefined = existingPhotoUrl ?? undefined;
       if (photoFile) {
         const presignRes = await fetch('/api/uploads/presign', {
           method: 'POST',
@@ -58,10 +87,13 @@ export default function CookOnboardingPage() {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        setError(j.error ?? 'Failed.');
+        setError(j.error ?? 'Failed to save.');
         return;
       }
-      router.push('/cook/profile/id');
+      setExistingPhotoUrl(photoUrl ?? null);
+      setPhotoFile(null);
+      setPhotoPreview(null);
+      setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
@@ -69,40 +101,50 @@ export default function CookOnboardingPage() {
     }
   };
 
+  if (!loaded) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
+        <Spinner className="w-8 h-8" />
+      </main>
+    );
+  }
+
+  const shownPhoto = photoPreview ?? existingPhotoUrl;
+
   return (
     <main className="min-h-screen bg-[var(--color-surface-0)]">
       <header className="border-b bg-[var(--color-surface-1)]">
-        <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/" className="text-xl font-bold text-brand-400">
-            CaterCare
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <Link
+            href="/cook"
+            className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          >
+            ← Dashboard
           </Link>
         </div>
       </header>
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        <h1 className="text-3xl font-bold">Become a cook</h1>
-        <p className="text-[var(--color-text-secondary)]">
-          Share your story. Buyers see this on your profile.
-        </p>
+        <div>
+          <h1 className="text-3xl font-bold">Edit your profile</h1>
+          <p className="text-[var(--color-text-secondary)] mt-1">
+            This is what buyers see on your cook page.
+          </p>
+        </div>
 
         <Card className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Profile photo <span className="text-[var(--color-text-tertiary)] font-normal">(optional)</span>
-            </label>
+            <label className="block text-sm font-medium mb-1">Profile photo</label>
             <div className="flex items-center gap-4">
-              {photoPreview && (
+              {shownPhoto && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={photoPreview}
-                  alt="Profile preview"
+                  src={shownPhoto}
+                  alt="Profile"
                   className="w-16 h-16 rounded-full object-cover"
                 />
               )}
               <input type="file" accept="image/*" onChange={onPhotoChange} className="text-sm" />
             </div>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-              Buyers trust a friendly face. You can add or change this later.
-            </p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Your story</label>
@@ -133,10 +175,16 @@ export default function CookOnboardingPage() {
         </Card>
 
         {error && <p className="text-sm text-red-700">{error}</p>}
+        {saved && <p className="text-sm text-emerald-700">Saved. Your profile is updated.</p>}
 
-        <Button className="w-full" onClick={submit} disabled={submitting}>
-          {submitting ? '…' : 'Continue to ID verification'}
-        </Button>
+        <div className="flex gap-3">
+          <Button className="flex-1" onClick={submit} disabled={submitting}>
+            {submitting ? 'Saving…' : 'Save changes'}
+          </Button>
+          <Button variant="secondary" onClick={() => router.push('/cook')} disabled={submitting}>
+            Done
+          </Button>
+        </div>
       </div>
     </main>
   );

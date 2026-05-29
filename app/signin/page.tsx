@@ -1,6 +1,7 @@
 import { signIn } from '@/lib/auth';
 import { Btn } from '@/components/ui/Btn';
 import { DevSignIn } from '@/components/DevSignIn';
+import { CredentialsForm } from '@/components/auth/CredentialsForm';
 import Link from 'next/link';
 
 export default function SignInPage() {
@@ -52,13 +53,38 @@ export default function SignInPage() {
             marginTop: 32,
           }}
         >
+          <CredentialsForm mode="signin" />
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              margin: '24px 0',
+            }}
+          >
+            <span style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+            <span
+              className="cc-mono"
+              style={{
+                fontSize: 10.5,
+                letterSpacing: '0.07em',
+                textTransform: 'uppercase',
+                color: 'var(--muted)',
+              }}
+            >
+              or
+            </span>
+            <span style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+          </div>
+
           <form
             action={async () => {
               'use server';
               await signIn('google');
             }}
           >
-            <Btn type="submit" variant="primary" size="lg" full>
+            <Btn type="submit" variant="secondary" size="lg" full>
               Continue with Google
             </Btn>
           </form>

@@ -67,6 +67,8 @@ model User {
   emailVerified DateTime?
   name          String?
   phone         String?
+  // Null for OAuth-only accounts (e.g. Google); set for email/password signups.
+  passwordHash  String?
   roles         UserRole[]
   status        UserStatus @default(PENDING)
   createdAt     DateTime   @default(now())

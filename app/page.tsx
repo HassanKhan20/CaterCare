@@ -41,9 +41,9 @@ export default function Home() {
               Sign in
             </Btn>
           </Link>
-          <Link href="/browse">
+          <Link href="/signup">
             <Btn variant="primary" size="sm">
-              Order food
+              Sign up
             </Btn>
           </Link>
         </div>

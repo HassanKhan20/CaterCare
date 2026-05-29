@@ -19,11 +19,19 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const body = Body.parse(await req.json());
 
+  // Only add the COOK role once — this endpoint doubles as the profile editor,
+  // and Prisma's `push` would otherwise append a duplicate role on every save.
+  const alreadyCook = session.user.roles.includes('COOK');
+
   await prisma.$transaction([
-    prisma.user.update({
-      where: { id: session.user.id },
-      data: { roles: { push: 'COOK' } },
-    }),
+    ...(alreadyCook
+      ? []
+      : [
+          prisma.user.update({
+            where: { id: session.user.id },
+            data: { roles: { push: 'COOK' } },
+          }),
+        ]),
     prisma.cookProfile.upsert({
       where: { userId: session.user.id },
       create: { userId: session.user.id, ...body },

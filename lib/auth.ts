@@ -37,6 +37,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
     }),
+    // Email + password sign-in. Works without any third-party OAuth keys.
+    // bcrypt is dynamically imported so it never lands in the Edge middleware bundle.
+    Credentials({
+      id: 'password',
+      name: 'Email and password',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(creds) {
+        const email = (creds?.email as string | undefined)?.trim().toLowerCase();
+        const password = creds?.password as string | undefined;
+        if (!email || !password) return null;
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user?.passwordHash) return null; // no account, or OAuth-only account
+        const { verifyPassword } = await import('@/lib/password');
+        if (!(await verifyPassword(password, user.passwordHash))) return null;
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          roles: user.roles,
+          status: user.status,
+        };
+      },
+    }),
     // DEV-ONLY: accepts a seeded user email and logs you in without OAuth.
     // Guarded by NODE_ENV check + the email must exist in the DB.
     ...(isDev

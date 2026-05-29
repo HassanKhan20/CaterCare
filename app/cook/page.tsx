@@ -60,6 +60,7 @@ export default function CookDashboard() {
             CaterCare
           </Link>
           <div className="flex gap-4 text-sm">
+            <Link href="/cook/profile/edit">Profile</Link>
             <Link href="/cook/dishes">Dishes</Link>
             <Link href="/cook/orders">Orders</Link>
             <Link href="/cook/availability">Availability</Link>
