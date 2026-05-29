@@ -123,15 +123,28 @@ export async function POST(req: Request) {
     },
   });
 
-  const pi = await createOrderPaymentIntent({
-    financials: f,
-    cookStripeAccountId: cook.stripeConnectAccountId!,
-    metadata: {
-      orderId: order.id,
-      buyerId: session.user.id,
-      cookId: body.cookId,
-    },
-  });
+  let pi;
+  try {
+    pi = await createOrderPaymentIntent({
+      financials: f,
+      cookStripeAccountId: cook.stripeConnectAccountId!,
+      metadata: {
+        orderId: order.id,
+        buyerId: session.user.id,
+        cookId: body.cookId,
+      },
+    });
+  } catch (err) {
+    // Payment setup failed (bad keys, Stripe down, etc.). The order never
+    // left DRAFT and has no PaymentIntent — remove it so we don't accumulate
+    // orphans, and return a clean error instead of a raw 500.
+    console.error('createOrderPaymentIntent failed:', err);
+    await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
+    return NextResponse.json(
+      { error: 'PAYMENT_SETUP_FAILED', message: 'Could not start payment. Please try again.' },
+      { status: 502 },
+    );
+  }
 
   await prisma.order.update({
     where: { id: order.id },

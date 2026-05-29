@@ -18,7 +18,7 @@ export default function CookPayoutsPage() {
     setSubmitting(true);
     const res = await fetch('/api/cook/stripe/onboard', { method: 'POST' });
     const json = await res.json();
-    if (json.url) window.location.href = json.url;
+    if (json.url) window.location.assign(json.url);
     setSubmitting(false);
   };
 

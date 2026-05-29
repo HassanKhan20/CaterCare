@@ -35,7 +35,7 @@ export default function JobsPage() {
     setClaiming(orderId);
     const res = await fetch(`/api/driver/jobs/${orderId}/claim`, { method: 'POST' });
     if (res.ok) {
-      window.location.href = `/driver/jobs/${orderId}`;
+      window.location.assign(`/driver/jobs/${orderId}`);
     } else {
       const j = await res.json();
       alert(j.error ?? 'Claim failed');

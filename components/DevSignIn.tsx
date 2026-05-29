@@ -22,7 +22,7 @@ export function DevSignIn() {
       redirect: false,
     });
     if (result?.ok) {
-      window.location.href = dest;
+      window.location.assign(dest);
     } else {
       alert(`Failed: ${result?.error ?? 'unknown error'}`);
       setSubmitting(null);
