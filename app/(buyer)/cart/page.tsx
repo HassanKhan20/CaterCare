@@ -25,7 +25,7 @@ export default function CartPage() {
   const [cart, setCart] = useState<Cart>(emptyCart());
 
   useEffect(() => {
-    setCart(loadCart());
+    queueMicrotask(() => setCart(loadCart()));
   }, []);
 
   const update = (next: Cart) => {

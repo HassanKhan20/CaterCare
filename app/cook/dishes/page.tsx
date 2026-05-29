@@ -24,7 +24,18 @@ export default function CookDishesPage() {
     setLoading(false);
   };
   useEffect(() => {
-    load();
+    let active = true;
+    void (async () => {
+      const res = await fetch('/api/cook/dishes');
+      const data = res.ok ? ((await res.json()).dishes ?? []) : [];
+      if (active) {
+        setDishes(data);
+        setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const removeDish = async (id: string) => {

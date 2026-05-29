@@ -24,7 +24,7 @@ export default function DriverDashboard() {
     if (res.ok) setProfile((await res.json()).profile);
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
   }, []);
 
   const toggleOnline = async () => {

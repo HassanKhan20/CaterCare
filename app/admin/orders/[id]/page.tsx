@@ -35,7 +35,8 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     }
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const cancel = async () => {

@@ -33,7 +33,8 @@ export default function AdminDriverDetailPage({ params }: { params: Promise<{ id
     }
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const approve = async () => {

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { haversineMiles } from '@/lib/geo';
 import { computeFinancials, createOrderPaymentIntent } from '@/lib/stripe';
 import { recordAcceptance } from '@/lib/tos';
+import { rateLimit } from '@/lib/rate-limit';
 import { env } from '@/lib/env';
 import { z } from 'zod';
 
@@ -23,6 +24,11 @@ const Body = z.object({
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+
+  // Guard against runaway order/PaymentIntent creation from one client.
+  const limited = rateLimit(`orders:${session.user.id}`, 10, 60_000);
+  if (limited) return limited;
+
   const body = Body.parse(await req.json());
 
   const [cook, dishes, address] = await Promise.all([

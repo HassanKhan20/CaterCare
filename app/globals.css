@@ -1355,3 +1355,23 @@ a.cc-bag-btn {
   --color-brand-800: color-mix(in oklab, var(--accent) 50%, black);
   --color-brand-900: color-mix(in oklab, var(--accent) 40%, black);
 }
+
+/* ===============================================================
+   MOBILE HARDENING
+   The nav packs logo + location pill + links + bag — too wide for a
+   phone. Collapse the location pill, tighten spacing, and let the
+   logo drop its wordmark on very narrow screens so nothing overflows.
+   Page side-padding stays 32px because several sections (strip, rail,
+   footer, cart totals) use coupled -32px negative margins.
+   =============================================================== */
+@media (max-width: 640px) {
+  .cc-nav-inner { padding: 12px 20px; gap: 14px; }
+  .cc-loc { display: none; }
+  .cc-nav-links { gap: 16px; }
+  .cc-nav-links a, .cc-nav-links button { font-size: 13px; }
+  .cc-logo { font-size: 22px; }
+}
+@media (max-width: 380px) {
+  .cc-logo-text { display: none; }
+  .cc-nav-links { gap: 12px; }
+}

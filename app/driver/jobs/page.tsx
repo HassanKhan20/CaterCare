@@ -26,7 +26,7 @@ export default function JobsPage() {
     if (res.ok) setJobs((await res.json()).jobs ?? []);
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
     const t = setInterval(load, 10_000);
     return () => clearInterval(t);
   }, []);

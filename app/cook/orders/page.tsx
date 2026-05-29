@@ -30,7 +30,7 @@ export default function CookOrdersPage() {
     if (res.ok) setOrders((await res.json()).orders ?? []);
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
     const t = setInterval(load, 15_000);
     return () => clearInterval(t);
   }, []);

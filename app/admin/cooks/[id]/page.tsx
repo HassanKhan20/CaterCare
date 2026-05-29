@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -25,7 +24,6 @@ type CookDetail = {
 
 export default function AdminCookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const [cook, setCook] = useState<CookDetail | null>(null);
 
   const load = async () => {
@@ -36,7 +34,8 @@ export default function AdminCookDetailPage({ params }: { params: Promise<{ id: 
     }
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const approveCook = async () => {

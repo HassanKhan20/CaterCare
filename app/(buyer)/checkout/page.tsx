@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Btn } from '@/components/ui/Btn';
 import { Icon } from '@/components/ui/Icon';
@@ -65,7 +64,6 @@ function buildTimeOptions(): TimeOption[] {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const [cart, setCart] = useState<Cart | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
@@ -82,14 +80,21 @@ export default function CheckoutPage() {
   );
 
   useEffect(() => {
-    setCart(loadCart());
-    fetch('/api/buyer/addresses')
-      .then((r) => r.json())
-      .then((j) => {
-        const list: Address[] = j.addresses ?? [];
-        setAddresses(list);
-        if (list[0]) setSelectedAddressId(list[0].id);
-      });
+    let active = true;
+    queueMicrotask(() => {
+      if (active) setCart(loadCart());
+    });
+    void (async () => {
+      const res = await fetch('/api/buyer/addresses');
+      if (!res.ok || !active) return;
+      const list: Address[] = (await res.json()).addresses ?? [];
+      if (!active) return;
+      setAddresses(list);
+      if (list[0]) setSelectedAddressId(list[0].id);
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const subtotalCents = cart?.items.reduce((s, i) => s + i.priceCents * i.qty, 0) ?? 0;
@@ -111,7 +116,7 @@ export default function CheckoutPage() {
   }, [cart, selectedAddressId, tipCents]);
 
   useEffect(() => {
-    fetchQuote();
+    queueMicrotask(fetchQuote);
   }, [fetchQuote]);
 
   const placeOrder = async () => {

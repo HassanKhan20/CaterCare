@@ -20,7 +20,8 @@ export default function AdminDriversPage() {
     if (res.ok) setDrivers((await res.json()).drivers ?? []);
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   return (

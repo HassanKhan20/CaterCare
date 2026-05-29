@@ -65,7 +65,7 @@ export default function AccountPage() {
     setLoading(false);
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
   }, []);
 
   const deleteAddress = async (id: string) => {

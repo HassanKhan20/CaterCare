@@ -60,7 +60,10 @@ export default function DriverJobDetailPage({
     if (detailRes.ok) setOrder((await detailRes.json()).order);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    queueMicrotask(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

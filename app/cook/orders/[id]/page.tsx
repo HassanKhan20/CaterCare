@@ -38,7 +38,8 @@ export default function CookOrderDetailPage({
     if (res.ok) setOrder((await res.json()).order);
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const transition = async (to: string) => {

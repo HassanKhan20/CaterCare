@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getStripe, createOnboardingLink } from '@/lib/stripe';
+import { rateLimit } from '@/lib/rate-limit';
 import Stripe from 'stripe';
 
 export async function POST() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+
+  // Instant payouts move money — cap attempts per driver.
+  const limited = rateLimit(`payout:${session.user.id}`, 5, 60_000);
+  if (limited) return limited;
+
   const profile = await prisma.driverProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile?.stripeConnectAccountId) {
     return NextResponse.json({ error: 'NO_STRIPE' }, { status: 400 });

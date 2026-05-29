@@ -24,7 +24,8 @@ export default function AdminCooksPage() {
     if (res.ok) setCooks((await res.json()).cooks ?? []);
   };
   useEffect(() => {
-    load();
+    queueMicrotask(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   return (
